@@ -69,7 +69,7 @@ public class DBHeapPage implements Serializable {
     /**
      * 序列化 内存结构化数据->磁盘二进制数据
      * */
-    private byte[] serialize() throws IOException {
+    public byte[] serialize() throws IOException {
         int len = BufferPool.getPageSize();
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(len);
         DataOutputStream dos = new DataOutputStream(byteArrayOutputStream);
@@ -87,25 +87,16 @@ public class DBHeapPage implements Serializable {
         // 如果实际不足一页，用0填充页内剩余的空间(实际数据无法和页大小恰好对齐)
         // 字节为单位 (页大小 - （位图大小bit * 8 + record长度 * record数量）)
         int needPaddingLength = BufferPool.getPageSize() - (this.bitMapHeaderArray.length * 8 + this.tableDesc.getSize() * this.recordArray.length); //- numSlots * td.getSize();
-        byte[] zeroes = new byte[needPaddingLength];
-        // 后续空余的空间，用0补齐
-        dos.write(zeroes, 0, needPaddingLength);
+        if(needPaddingLength > 0){
+            byte[] zeroes = new byte[needPaddingLength];
+            // 后续空余的空间，用0补齐
+            dos.write(zeroes, 0, needPaddingLength);
+        }
 
         // 强制刷新
         dos.flush();
 
         return byteArrayOutputStream.toByteArray();
-    }
-
-    private int getMaxSlotNum(){
-        // BufferPool.getPageSize() * 8 => 每个HeapPage的字节数 * 8 => 每个HeapPage的字节数bit数（1Byte字节=8bit）
-        int pageTotalBit = BufferPool.getPageSize() * 8;
-
-        // 每一个tuple的字节数 * 8 + 1(每个tuple占HeapPage header位图的1bit位)
-        int perRecordBit = tableDesc.getSize() * 8 + 1;
-
-        // return返回值：HeapPage一页能容纳的tuple最大数量，向下取整（slot插槽数）
-        return pageTotalBit / perRecordBit;
     }
 
     private Record readNextRecord(DataInputStream dis, int slotIndex) {
@@ -201,7 +192,28 @@ public class DBHeapPage implements Serializable {
         return true;
     }
 
-    protected class HeapPageTupleIterator implements Iterator<Record> {
+    public int getNotEmptySlotsNum() {
+        int notEmptySlotNum = 0;
+        for (boolean b : this.bitMapHeaderArray) {
+            if (b) {
+                notEmptySlotNum += 1;
+            }
+        }
+        return notEmptySlotNum;
+    }
+
+    public int getMaxSlotNum(){
+        // BufferPool.getPageSize() * 8 => 每个HeapPage的字节数 * 8 => 每个HeapPage的字节数bit数（1Byte字节=8bit）
+        int pageTotalBit = BufferPool.getPageSize() * 8;
+
+        // 每一个tuple的字节数 * 8 + 1(每个tuple占HeapPage header位图的1bit位)
+        int perRecordBit = tableDesc.getSize() * 8 + 1;
+
+        // return返回值：HeapPage一页能容纳的tuple最大数量，向下取整（slot插槽数）
+        return pageTotalBit / perRecordBit;
+    }
+
+    private class HeapPageTupleIterator implements Iterator<Record> {
         private final Iterator<Record> iter;
         public HeapPageTupleIterator() {
             ArrayList<Record> tupleArrayList = new ArrayList<>();

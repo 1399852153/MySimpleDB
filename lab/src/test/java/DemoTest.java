@@ -1,4 +1,6 @@
+import org.junit.Assert;
 import org.junit.Test;
+import simpledb.dbfile.DBHeapFile;
 import simpledb.dbpage.DBHeapPage;
 import simpledb.dbpage.PageId;
 import simpledb.dbrecord.Record;
@@ -8,6 +10,9 @@ import simpledb.matadata.fields.StringField;
 import simpledb.matadata.table.TableDesc;
 import simpledb.matadata.types.ColumnTypeEnum;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.Arrays;
 
 /**
@@ -17,7 +22,7 @@ import java.util.Arrays;
 public class DemoTest {
 
     @Test
-    public void testWriteDisk() {
+    public void testWriteDisk() throws IOException {
         String tableId = "people";
         TableDesc tableDesc = new TableDesc(
                 "people",
@@ -57,10 +62,23 @@ public class DemoTest {
                 new StringField("a3"))
         );
 
+        // 测试插入、删除
         DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[4096]);
         dbHeapPage.insertRecord(record1);
         dbHeapPage.insertRecord(record2);
         dbHeapPage.insertRecord(record3);
+        Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),3);
 
+        dbHeapPage.deleteRecord(record3);
+        Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),2);
+
+        // 测试序列化/反序列化 有bug todo
+        byte[] bytes = dbHeapPage.serialize();
+        DBHeapPage dbHeapPageCopy = new DBHeapPage(tableDesc,pageId,bytes);
+        Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),2);
+        dbHeapPageCopy.insertRecord(record3);
+        Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),3);
+
+        // todo 测试满页的序列化/反序列化
     }
 }
