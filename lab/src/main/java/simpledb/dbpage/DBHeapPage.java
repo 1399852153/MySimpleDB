@@ -8,6 +8,7 @@ import simpledb.exception.ParseException;
 import simpledb.matadata.fields.Field;
 import simpledb.matadata.table.TableDesc;
 import simpledb.matadata.types.ColumnTypeEnum;
+import simpledb.util.CommonUtil;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -56,6 +57,11 @@ public class DBHeapPage implements Serializable {
         for (int i=0; i<bitMapHeaderArray.length; i++) {
             this.bitMapHeaderArray[i] = dis.readBoolean();
         }
+        // 不满一个字节的，将其跳过
+        int needSkip = CommonUtil.bitCeilByte(this.maxSlotNum);
+        for(int i=0; i<needSkip; i++){
+            dis.readBoolean();
+        }
 
         // 读取文件流，根据读取出相应的数据记录
         this.recordArray = new Record[this.maxSlotNum];
@@ -77,6 +83,11 @@ public class DBHeapPage implements Serializable {
         // 写入位图
         for (boolean b : this.bitMapHeaderArray) {
             dos.writeBoolean(b);
+        }
+        // 不满一个字节的，将其跳过
+        int needSkip = CommonUtil.bitCeilByte(this.maxSlotNum);
+        for(int i=0; i<needSkip; i++){
+            dos.writeBoolean(false);
         }
 
         // 写入record

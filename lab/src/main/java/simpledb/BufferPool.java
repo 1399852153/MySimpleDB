@@ -6,7 +6,7 @@ package simpledb;
  */
 public class BufferPool {
 
-    private static final int DEFAULT_PAGE_SIZE = 4 * 1024;
+    private static final int DEFAULT_PAGE_SIZE = 4096;
 
 
     public static int getPageSize(){

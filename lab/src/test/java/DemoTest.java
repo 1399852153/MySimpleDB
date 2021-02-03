@@ -1,5 +1,6 @@
 import org.junit.Assert;
 import org.junit.Test;
+import simpledb.BufferPool;
 import simpledb.dbfile.DBHeapFile;
 import simpledb.dbpage.DBHeapPage;
 import simpledb.dbpage.PageId;
@@ -63,7 +64,7 @@ public class DemoTest {
         );
 
         // 测试插入、删除
-        DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[4096]);
+        DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[BufferPool.getPageSize()]);
         dbHeapPage.insertRecord(record1);
         dbHeapPage.insertRecord(record2);
         dbHeapPage.insertRecord(record3);
@@ -72,12 +73,12 @@ public class DemoTest {
         dbHeapPage.deleteRecord(record3);
         Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),2);
 
-        // 测试序列化/反序列化 有bug todo
+        // 测试序列化/反序列化
         byte[] bytes = dbHeapPage.serialize();
         DBHeapPage dbHeapPageCopy = new DBHeapPage(tableDesc,pageId,bytes);
-        Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),2);
+        Assert.assertEquals(dbHeapPageCopy.getNotEmptySlotsNum(),2);
         dbHeapPageCopy.insertRecord(record3);
-        Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),3);
+        Assert.assertEquals(dbHeapPageCopy.getNotEmptySlotsNum(),3);
 
         // todo 测试满页的序列化/反序列化
     }

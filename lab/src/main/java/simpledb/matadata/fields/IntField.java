@@ -33,7 +33,7 @@ public class IntField implements Field {
     @Override
     public void serialize(DataOutputStream dos) {
         try {
-            dos.write(value);
+            dos.writeInt(value);
         } catch (IOException e) {
             throw new ParseException("IntField serialize error");
         }
