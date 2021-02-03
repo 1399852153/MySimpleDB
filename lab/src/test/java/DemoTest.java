@@ -1,4 +1,5 @@
 import org.junit.Test;
+import simpledb.dbpage.DBHeapPage;
 import simpledb.dbpage.PageId;
 import simpledb.dbrecord.Record;
 import simpledb.dbrecord.RecordId;
@@ -56,6 +57,10 @@ public class DemoTest {
                 new StringField("a3"))
         );
 
+        DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[4096]);
+        dbHeapPage.insertRecord(record1);
+        dbHeapPage.insertRecord(record2);
+        dbHeapPage.insertRecord(record3);
 
     }
 }

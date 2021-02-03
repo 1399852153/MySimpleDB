@@ -52,7 +52,7 @@ public class DBHeapPage implements Serializable {
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
 
         // 读取文件流，构造header位图
-        this.bitMapHeaderArray = new boolean[getHeaderSize()];
+        this.bitMapHeaderArray = new boolean[this.maxSlotNum];
         for (int i=0; i<bitMapHeaderArray.length; i++) {
             this.bitMapHeaderArray[i] = dis.readBoolean();
         }
@@ -99,16 +99,13 @@ public class DBHeapPage implements Serializable {
 
     private int getMaxSlotNum(){
         // BufferPool.getPageSize() * 8 => 每个HeapPage的字节数 * 8 => 每个HeapPage的字节数bit数（1Byte字节=8bit）
-        // td.getSize() * 8 + 1 => 每一个tuple的字节数 * 8 + 1(每个tuple占HeapPage header位图的1bit位)
-        // return返回值：HeapPage一页能容纳的tuple最大数量（slot插槽数）
-        return (BufferPool.getPageSize() * 8) / (tableDesc.getSize() * 8 + 1);
-    }
+        int pageTotalBit = BufferPool.getPageSize() * 8;
 
-    private int getHeaderSize() {
-        // page对应的slot插槽数决定了需要为header位图分配的内存大小
-        // header位图是以Byte为单位分配的，因此需要分配的Byte数为插槽数/8，向上取整
-        // 例如插槽数是9，那么必须要9/8=1.xxxx(向上取整)=2Byte共16bit的空间（1*8 < 9 < 2*8）来对应这9个插槽
-        return (int)Math.ceil(getMaxSlotNum()*1.0/8);
+        // 每一个tuple的字节数 * 8 + 1(每个tuple占HeapPage header位图的1bit位)
+        int perRecordBit = tableDesc.getSize() * 8 + 1;
+
+        // return返回值：HeapPage一页能容纳的tuple最大数量，向下取整（slot插槽数）
+        return pageTotalBit / perRecordBit;
     }
 
     private Record readNextRecord(DataInputStream dis, int slotIndex) {
@@ -157,16 +154,34 @@ public class DBHeapPage implements Serializable {
         }
     }
 
+    private int getFirstEmptySlotIndex(){
+        for(int i=0; i<this.bitMapHeaderArray.length; i++){
+            if(!bitMapHeaderArray[i]){
+                return i;
+            }
+        }
 
-    public boolean insertRecord(Record newRecord){
+        throw new DBException("can't find a empty slot");
+    }
+
+    // ==============================接口方法===========================
+
+    /**
+     * 插入一条记录
+     * */
+    public void insertRecord(Record newRecord){
         if (!newRecord.getTableDesc().equals(tableDesc)){
             throw new DBException("table desc not match");
         }
 
-        return true;
+        int emptySlotIndex = getFirstEmptySlotIndex();
+        this.recordArray[emptySlotIndex] = newRecord;
+        this.bitMapHeaderArray[emptySlotIndex] = true;
     }
 
-
+    /**
+     * 删除一条记录
+     * */
     public boolean deleteRecord(Record recordNeedDelete){
         if (!recordNeedDelete.getTableDesc().equals(tableDesc)){
             throw new DBException("table desc not match");
