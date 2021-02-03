@@ -1,5 +1,6 @@
-package simpledb.matadata;
+package simpledb.matadata.table;
 
+import simpledb.matadata.fields.Field;
 import simpledb.matadata.types.ColumnType;
 
 /**
@@ -10,7 +11,7 @@ public class TableColumn {
 
     private ColumnType columnType;
 
-//    private Field field;
+    private Field field;
 
 
 }

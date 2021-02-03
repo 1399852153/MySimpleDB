@@ -21,6 +21,11 @@ public class StringField implements Field {
     private String value;
     private final ColumnTypeEnum columnTypeEnum = ColumnTypeEnum.STRING_TYPE;
 
+    public StringField(String value){
+        assert value.length() <= MAX_LENGTH;
+        this.value = value;
+    }
+
     public StringField(DataInputStream dis) {
         String businessData;
         try {
