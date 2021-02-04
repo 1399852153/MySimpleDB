@@ -1,4 +1,4 @@
-package simpledb.predicate;
+package simpledb.iterator;
 
 /**
  * @author xiongyx

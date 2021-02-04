@@ -230,9 +230,11 @@ public class DBHeapPage implements Serializable {
         return pageId;
     }
 
-    private class HeapPageTupleIterator implements Iterator<Record> {
+    // =============================== Page页迭代器 ====================================
+
+    private class HeapPageIterator implements Iterator<Record> {
         private final Iterator<Record> iter;
-        public HeapPageTupleIterator() {
+        public HeapPageIterator() {
             ArrayList<Record> tupleArrayList = new ArrayList<>();
             for (int i = 0; i < DBHeapPage.this.maxSlotNum; i++) {
                 if (DBHeapPage.this.bitMapHeaderArray[i]) {
@@ -260,7 +262,6 @@ public class DBHeapPage implements Serializable {
     }
 
     public Iterator<Record> iterator() {
-        // some code goes here
-        return new HeapPageTupleIterator();
+        return new HeapPageIterator();
     }
 }

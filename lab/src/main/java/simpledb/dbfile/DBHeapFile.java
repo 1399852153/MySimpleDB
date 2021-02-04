@@ -1,16 +1,19 @@
 package simpledb.dbfile;
 
-import simpledb.BufferPool;
 import simpledb.Database;
 import simpledb.dbpage.DBHeapPage;
 import simpledb.dbpage.PageId;
+import simpledb.dbrecord.Record;
 import simpledb.exception.DBException;
+import simpledb.iterator.DbFileIterator;
 import simpledb.matadata.table.TableDesc;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * @author xiongyx
@@ -36,8 +39,8 @@ public class DBHeapFile {
 
     /**
      * 读取一个页
-     * */
-    public DBHeapPage readPage(PageId pageId){
+     */
+    public DBHeapPage readPage(PageId pageId) {
         String tableId = pageId.getTableId();
         int pgNo = pageId.getPageNo();
         final int pageSize = Database.getBufferPool().getPageSize();
@@ -57,7 +60,7 @@ public class DBHeapFile {
 
     /**
      * 读取一个页
-     * */
+     */
     public void writePage(DBHeapPage dbHeapPage) {
         PageId pageId = dbHeapPage.getPageId();
         int pgNo = pageId.getPageNo();
@@ -74,4 +77,81 @@ public class DBHeapFile {
             throw new DBException("HeapFile writePage error pageId=" + pageId);
         }
     }
+
+    /**
+     * 当前文件存在多少页
+     */
+    public int getPageNum() {
+        return (int) dbFile.length() / Database.getBufferPool().getPageSize();
+    }
+
+    // =============================== DBFile迭代器 ====================================
+
+    private class HeapFileIterator implements DbFileIterator<Record> {
+
+        private Integer pgCursor;
+        private Iterator<Record> pageIterator;
+        private final String tableId;
+        private final int numPages;
+
+        public HeapFileIterator(String tableId) {
+            this.pgCursor = null;
+            this.pageIterator = null;
+            this.tableId = tableId;
+            this.numPages = getPageNum();
+        }
+
+        @Override
+        public void open() {
+            pgCursor = 0;
+            pageIterator = getNewPageIterator(pgCursor);
+        }
+
+        @Override
+        public void close() {
+            pgCursor = null;
+            pageIterator = null;
+        }
+
+        @Override
+        public void reset() {
+            close();
+            open();
+        }
+
+        @Override
+        public boolean hasNext() {
+            if(pageIterator == null){
+                return false;
+            }
+
+            while (pgCursor < numPages - 1) {
+                if(pageIterator.hasNext()){
+                    return true;
+                }else{
+                    pgCursor += 1;
+                    pageIterator = getNewPageIterator(pgCursor);
+                }
+            }
+
+            return pageIterator.hasNext();
+        }
+
+        @Override
+        public Record next() {
+            if (hasNext())  {
+                return pageIterator.next();
+            }else{
+                throw new NoSuchElementException("no more record");
+            }
+        }
+
+        private Iterator<Record> getNewPageIterator(int pgNo) {
+            PageId pid = new PageId(tableId, pgNo);
+            return Database
+                    .getBufferPool()
+                    .getPage(pid).iterator();
+        }
+    }
+
 }
