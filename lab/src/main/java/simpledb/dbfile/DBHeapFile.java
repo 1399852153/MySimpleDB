@@ -59,10 +59,7 @@ public class DBHeapFile {
      * 读取一个页
      * */
     public void writePage(DBHeapPage dbHeapPage) {
-        // some code goes here
-        // not necessary for lab1
         PageId pageId = dbHeapPage.getPageId();
-        String tableId = pageId.getTableId();
         int pgNo = pageId.getPageNo();
 
         final int pageSize = Database.getBufferPool().getPageSize();

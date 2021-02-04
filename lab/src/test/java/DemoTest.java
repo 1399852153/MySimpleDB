@@ -2,6 +2,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import simpledb.BufferPool;
 import simpledb.Database;
+import simpledb.dbfile.DBHeapFile;
 import simpledb.dbpage.DBHeapPage;
 import simpledb.dbpage.PageId;
 import simpledb.dbrecord.Record;
@@ -11,6 +12,7 @@ import simpledb.matadata.fields.StringField;
 import simpledb.matadata.table.TableDesc;
 import simpledb.matadata.types.ColumnTypeEnum;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -123,4 +125,44 @@ public class DemoTest {
         Assert.assertEquals(dbHeapPageCopy.getNotEmptySlotsNum(),maxSlot-1);
     }
 
+    @Test
+    public void testFileWrite(){
+        String tableId = "people";
+        TableDesc tableDesc = new TableDesc(
+                "people",
+                Arrays.asList(
+                        ColumnTypeEnum.INT_TYPE,
+                        ColumnTypeEnum.INT_TYPE,
+                        ColumnTypeEnum.STRING_TYPE
+                )
+        );
+
+        PageId pageId = new PageId(tableId,1);
+        // 测试插入、删除
+        DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+        Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
+
+        int maxSlot = dbHeapPage.getMaxSlotNum();
+        for(int i=0; i<maxSlot; i++){
+            Record record = new Record();
+            record.setRecordId(new RecordId(pageId,i));
+            record.setTableDesc(tableDesc);
+            record.setFieldList(Arrays.asList(
+                    new IntField(i),
+                    new IntField(10 + i),
+                    new StringField("a" + i))
+            );
+            dbHeapPage.insertRecord(record);
+        }
+
+        Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),maxSlot);
+
+        File file = new File("table1");
+        DBHeapFile table1File = new DBHeapFile(tableDesc,file);
+
+        table1File.writePage(dbHeapPage);
+        DBHeapPage dbHeapPageCopy = table1File.readPage(dbHeapPage.getPageId());
+
+        Assert.assertEquals(dbHeapPageCopy.getNotEmptySlotsNum(),maxSlot);
+    }
 }

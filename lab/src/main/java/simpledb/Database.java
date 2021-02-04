@@ -6,10 +6,10 @@ package simpledb;
  */
 public class Database {
 
-    private static BufferPool bufferPool;
+    private static final BufferPool bufferPool;
     private static final int DEFAULT_PAGE_CAPACITY = 500;
 
-    public Database() {
+    static{
         bufferPool = new BufferPool(DEFAULT_PAGE_CAPACITY);
     }
 
