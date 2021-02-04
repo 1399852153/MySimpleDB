@@ -1,9 +1,7 @@
 package simpledb.matadata.fields;
 
 import simpledb.exception.ParseException;
-import simpledb.matadata.types.ColumnType;
 import simpledb.matadata.types.ColumnTypeEnum;
-import simpledb.predicate.Predicate;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

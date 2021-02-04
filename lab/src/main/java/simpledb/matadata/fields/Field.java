@@ -1,7 +1,6 @@
 package simpledb.matadata.fields;
 
 import simpledb.matadata.types.ColumnTypeEnum;
-import simpledb.predicate.Predicate;
 
 import java.io.DataOutputStream;
 

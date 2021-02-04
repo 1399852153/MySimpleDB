@@ -2,6 +2,8 @@ package simpledb.dbrecord;
 
 import simpledb.dbpage.PageId;
 
+import java.util.Objects;
+
 /**
  * @author xiongyx
  * @date 2021/2/2
@@ -28,5 +30,18 @@ public class RecordId {
 
     public PageId getPageId() {
         return pageId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RecordId recordId = (RecordId) o;
+        return pageInnerNo == recordId.pageInnerNo && pageId.equals(recordId.pageId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pageId, pageInnerNo);
     }
 }

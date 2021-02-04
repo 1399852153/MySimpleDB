@@ -8,8 +8,13 @@ public class BufferPool {
 
     private static final int DEFAULT_PAGE_SIZE = 4096;
 
+    private int pageCapacity;
 
-    public static int getPageSize(){
+    public BufferPool(int pageCapacity) {
+        this.pageCapacity = pageCapacity;
+    }
+
+    public int getPageSize(){
         return DEFAULT_PAGE_SIZE;
     }
 }

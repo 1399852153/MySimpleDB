@@ -1,5 +1,7 @@
 package simpledb.dbpage;
 
+import java.util.Objects;
+
 /**
  * @author xiongyx
  * @date 2021/2/2
@@ -27,5 +29,26 @@ public class PageId {
 
     public int getPageNo() {
         return pageNo;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PageId pageId = (PageId) o;
+        return pageNo == pageId.pageNo && Objects.equals(tableId, pageId.tableId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(tableId, pageNo);
+    }
+
+    @Override
+    public String toString() {
+        return "PageId{" +
+                "tableId='" + tableId + '\'' +
+                ", pageNo=" + pageNo +
+                '}';
     }
 }
