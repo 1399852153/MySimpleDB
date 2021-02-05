@@ -11,9 +11,12 @@ import java.util.List;
  */
 public class Record {
     private RecordId recordId;
-
     private TableDesc tableDesc;
     private List<Field> fieldList;
+
+    public Field getField(int index){
+        return this.fieldList.get(index);
+    }
 
     public TableDesc getTableDesc() {
         return tableDesc;

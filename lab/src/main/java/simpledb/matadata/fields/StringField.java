@@ -1,6 +1,9 @@
 package simpledb.matadata.fields;
 
+import simpledb.exception.DBException;
 import simpledb.exception.ParseException;
+import simpledb.iterator.Predicate;
+import simpledb.iterator.enums.OperatorEnum;
 import simpledb.matadata.types.ColumnTypeEnum;
 
 import java.io.DataInputStream;
@@ -65,6 +68,41 @@ public class StringField implements Field {
             }
         } catch (IOException e) {
             throw new ParseException("StringField serialize error");
+        }
+    }
+
+    @Override
+    public boolean compare(OperatorEnum operatorEnum, Field recordFieldValue) {
+        StringField itemValue = (StringField) recordFieldValue;
+        int cmpVal = this.value.compareTo(itemValue.value);
+
+        switch (operatorEnum) {
+            case EQUALS:
+                return cmpVal == 0;
+
+            case NOT_EQUALS:
+                return cmpVal != 0;
+
+            case GREATER_THAN:
+                return cmpVal > 0;
+
+            case GREATER_THAN_OR_EQ:
+                return cmpVal >= 0;
+
+            case LESS_THAN:
+                return cmpVal < 0;
+
+            case LESS_THAN_OR_EQ:
+                return cmpVal <= 0;
+
+            case LIKE:
+                return this.value.contains(itemValue.value);
+            case LEFT_LIKE:
+                return itemValue.value.startsWith(this.value);
+            case RIGHT_LIKE:
+                return itemValue.value.endsWith(this.value);
+            default:
+                throw new DBException("un support operatorEnum op=" + operatorEnum);
         }
     }
 

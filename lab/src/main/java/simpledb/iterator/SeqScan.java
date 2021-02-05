@@ -10,30 +10,35 @@ import simpledb.dbrecord.Record;
 public class SeqScan implements DbFileIterator<Record>{
 
     private DBFile dbFile;
+    private DbFileIterator<Record> dbFileIterator;
 
+    public SeqScan(DBFile dbFile) {
+        this.dbFile = dbFile;
+        this.dbFileIterator = dbFile.getIterator();
+    }
 
     @Override
     public void open() {
-
+        dbFileIterator.open();
     }
 
     @Override
     public void close() {
-
+        dbFileIterator.close();
     }
 
     @Override
     public void reset() {
-
+        dbFileIterator.reset();
     }
 
     @Override
     public boolean hasNext() {
-        return false;
+        return dbFileIterator.hasNext();
     }
 
     @Override
     public Record next() {
-        return null;
+        return dbFileIterator.next();
     }
 }

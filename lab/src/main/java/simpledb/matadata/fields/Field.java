@@ -1,5 +1,7 @@
 package simpledb.matadata.fields;
 
+import simpledb.iterator.Predicate;
+import simpledb.iterator.enums.OperatorEnum;
 import simpledb.matadata.types.ColumnTypeEnum;
 
 import java.io.DataOutputStream;
@@ -12,7 +14,7 @@ public interface Field {
 
     void serialize(DataOutputStream dos);
 
-    // boolean compare(Predicate predicate, Field value);
+     boolean compare(OperatorEnum operatorEnum, Field value);
 
     ColumnTypeEnum getType();
 
