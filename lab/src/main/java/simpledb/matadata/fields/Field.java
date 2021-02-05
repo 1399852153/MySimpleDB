@@ -15,4 +15,6 @@ public interface Field {
     // boolean compare(Predicate predicate, Field value);
 
     ColumnTypeEnum getType();
+
+    String toString();
 }

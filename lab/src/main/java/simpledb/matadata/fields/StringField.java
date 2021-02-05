@@ -72,4 +72,11 @@ public class StringField implements Field {
     public ColumnTypeEnum getType() {
         return columnTypeEnum;
     }
+
+    @Override
+    public String toString() {
+        return "StringField{" +
+                "value='" + value + '\'' +
+                '}';
+    }
 }

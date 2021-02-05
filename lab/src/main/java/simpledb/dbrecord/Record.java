@@ -15,7 +15,6 @@ public class Record {
     private TableDesc tableDesc;
     private List<Field> fieldList;
 
-
     public TableDesc getTableDesc() {
         return tableDesc;
     }
@@ -38,5 +37,13 @@ public class Record {
 
     public void setFieldList(List<Field> fieldList) {
         this.fieldList = fieldList;
+    }
+
+    @Override
+    public String toString() {
+        return "Record{" +
+                "recordId=" + recordId +
+                ", fieldList=" + fieldList +
+                '}';
     }
 }

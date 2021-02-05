@@ -85,6 +85,13 @@ public class DBHeapFile {
         return (int) dbFile.length() / Database.getBufferPool().getPageSize();
     }
 
+    /**
+     * 获得当前
+     * */
+    public DbFileIterator<Record> getIterator(){
+        return new HeapFileIterator(this.tableDesc.getTableId());
+    }
+
     // =============================== DBFile迭代器 ====================================
 
     private class HeapFileIterator implements DbFileIterator<Record> {

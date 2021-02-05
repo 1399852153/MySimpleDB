@@ -14,20 +14,14 @@ public class BufferPool {
 
     private static final int DEFAULT_PAGE_SIZE = 4096;
 
-    private ConcurrentHashMap<PageId, DBHeapPage> pageCacheMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<PageId, DBHeapPage> pageCacheMap = new ConcurrentHashMap<>();
 
     private int maxPageSize;
-    private int pageCapacity;
 
-    public BufferPool(int maxPageSize, int pageCapacity) {
+    public BufferPool(int maxPageSize) {
         this.maxPageSize = maxPageSize;
-        this.pageCapacity = pageCapacity;
     }
 
-
-    public BufferPool(int pageCapacity) {
-        this.pageCapacity = pageCapacity;
-    }
 
     public int getPageSize(){
         return DEFAULT_PAGE_SIZE;
@@ -38,15 +32,13 @@ public class BufferPool {
             return pageCacheMap.get(pageId);
         }else{
             if (pageCacheMap.size() < this.maxPageSize) {
-//                DBHeapPage page =
-//                        Database.getCatalog()
-//                                .getDatabaseFile(pid.getTableId())
-//                                .readPage(pid);
+                DBHeapPage page = Database.getCatalog()
+                                .getTableById(pageId.getTableId())
+                                .getDbHeapFile()
+                                .readPage(pageId);
                 // 加入缓存
-//                pageCacheMap.put(pageId, page);
-//                return page;
-
-                return null;
+                pageCacheMap.put(pageId, page);
+                return page;
             } else {
                 // todo 使用淘汰算法置换页面
                 throw new DBException("BufferPool is full");

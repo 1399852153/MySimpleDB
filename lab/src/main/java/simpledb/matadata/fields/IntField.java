@@ -41,4 +41,11 @@ public class IntField implements Field {
     public ColumnTypeEnum getType() {
         return columnType;
     }
+
+    @Override
+    public String toString() {
+        return "IntField{" +
+                "value=" + value +
+                '}';
+    }
 }

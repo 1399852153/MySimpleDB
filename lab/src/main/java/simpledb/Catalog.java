@@ -11,11 +11,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author xiongyx
  * @date 2021/2/1
  */
-public class Category {
+public class Catalog {
 
     private Map<String, TableInfo> tableMap;
 
-    public Category() {
+    public Catalog() {
         tableMap = new ConcurrentHashMap<>();
     }
 
@@ -23,17 +23,17 @@ public class Category {
         tableMap.put(tableId,new TableInfo(tableDesc,dbHeapFile,tableId));
     }
 
-    public TableDesc getTableById(String tableId){
+    public TableInfo getTableById(String tableId){
         TableInfo tableInfo = tableMap.get(tableId);
         if(tableInfo != null){
-            return tableInfo.tableDesc;
+            return tableInfo;
         }else{
             throw new DBException("not find tableInfo: tableId=" + tableId);
         }
     }
 
 
-    private class TableInfo{
+    public class TableInfo{
         private TableDesc tableDesc;
         private DBHeapFile dbHeapFile;
         private String tableId;
@@ -42,6 +42,18 @@ public class Category {
             this.tableDesc = tableDesc;
             this.dbHeapFile = dbHeapFile;
             this.tableId = tableId;
+        }
+
+        public TableDesc getTableDesc() {
+            return tableDesc;
+        }
+
+        public DBHeapFile getDbHeapFile() {
+            return dbHeapFile;
+        }
+
+        public String getTableId() {
+            return tableId;
         }
     }
 }
