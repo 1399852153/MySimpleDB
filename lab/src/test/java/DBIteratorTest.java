@@ -1,8 +1,10 @@
 import org.junit.Assert;
 import org.junit.Test;
 import simpledb.Database;
+import simpledb.dbfile.DBFile;
 import simpledb.dbfile.DBHeapFile;
 import simpledb.dbpage.DBHeapPage;
+import simpledb.dbpage.DBPage;
 import simpledb.dbpage.PageId;
 import simpledb.dbrecord.Record;
 import simpledb.dbrecord.RecordId;
@@ -34,14 +36,14 @@ public class DBIteratorTest {
         );
 
         File file = new File("table1");
-        DBHeapFile table1File = new DBHeapFile(tableDesc,file);
+        DBFile table1File = new DBHeapFile(tableDesc,file);
         Database.getCatalog().addTable(tableId,tableDesc,table1File);
 
         int pageNum = 3;
         for(int j=0; j<pageNum; j++) {
             PageId pageId = new PageId(tableId,j);
             // 测试插入、删除
-            DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+            DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
             Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
 
             int maxSlot = dbHeapPage.getMaxSlotNum();

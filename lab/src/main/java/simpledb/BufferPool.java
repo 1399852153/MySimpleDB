@@ -1,6 +1,6 @@
 package simpledb;
 
-import simpledb.dbpage.DBHeapPage;
+import simpledb.dbpage.DBPage;
 import simpledb.dbpage.PageId;
 import simpledb.exception.DBException;
 
@@ -14,7 +14,7 @@ public class BufferPool {
 
     private static final int DEFAULT_PAGE_SIZE = 4096;
 
-    private final ConcurrentHashMap<PageId, DBHeapPage> pageCacheMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<PageId, DBPage> pageCacheMap = new ConcurrentHashMap<>();
 
     private int maxPageSize;
 
@@ -27,14 +27,14 @@ public class BufferPool {
         return DEFAULT_PAGE_SIZE;
     }
 
-    public DBHeapPage getPage(PageId pageId){
+    public DBPage getPage(PageId pageId){
         if (pageCacheMap.contains(pageId)) {
             return pageCacheMap.get(pageId);
         }else{
             if (pageCacheMap.size() < this.maxPageSize) {
-                DBHeapPage page = Database.getCatalog()
+                DBPage page = Database.getCatalog()
                                 .getTableById(pageId.getTableId())
-                                .getDbHeapFile()
+                                .getDbFile()
                                 .readPage(pageId);
                 // 加入缓存
                 pageCacheMap.put(pageId, page);

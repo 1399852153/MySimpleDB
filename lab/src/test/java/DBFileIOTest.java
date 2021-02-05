@@ -1,9 +1,10 @@
 import org.junit.Assert;
 import org.junit.Test;
-import simpledb.BufferPool;
 import simpledb.Database;
+import simpledb.dbfile.DBFile;
 import simpledb.dbfile.DBHeapFile;
 import simpledb.dbpage.DBHeapPage;
+import simpledb.dbpage.DBPage;
 import simpledb.dbpage.PageId;
 import simpledb.dbrecord.Record;
 import simpledb.dbrecord.RecordId;
@@ -20,7 +21,7 @@ import java.util.Arrays;
  * @author xiongyx
  * @date 2021/2/1
  */
-public class DemoTest {
+public class DBFileIOTest {
 
     @Test
     public void testSerialize() throws IOException {
@@ -64,7 +65,7 @@ public class DemoTest {
         );
 
         // 测试插入、删除
-        DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+        DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
         dbHeapPage.insertRecord(record1);
         dbHeapPage.insertRecord(record2);
         dbHeapPage.insertRecord(record3);
@@ -75,7 +76,7 @@ public class DemoTest {
 
         // 测试序列化/反序列化
         byte[] bytes = dbHeapPage.serialize();
-        DBHeapPage dbHeapPageCopy = new DBHeapPage(tableDesc,pageId,bytes);
+        DBPage dbHeapPageCopy = new DBHeapPage(tableDesc,pageId,bytes);
         Assert.assertEquals(dbHeapPageCopy.getNotEmptySlotsNum(),2);
         dbHeapPageCopy.insertRecord(record3);
         Assert.assertEquals(dbHeapPageCopy.getNotEmptySlotsNum(),3);
@@ -95,7 +96,7 @@ public class DemoTest {
 
         PageId pageId = new PageId(tableId,1);
         // 测试插入、删除
-        DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+        DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
         Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
 
         int maxSlot = dbHeapPage.getMaxSlotNum();
@@ -115,7 +116,7 @@ public class DemoTest {
 
         // 测试序列化/反序列化
         byte[] bytes = dbHeapPage.serialize();
-        DBHeapPage dbHeapPageCopy = new DBHeapPage(tableDesc,pageId,bytes);
+        DBPage dbHeapPageCopy = new DBHeapPage(tableDesc,pageId,bytes);
         Assert.assertEquals(dbHeapPageCopy.getNotEmptySlotsNum(),maxSlot);
 
         Record recordNeedDelete = new Record();
@@ -139,7 +140,7 @@ public class DemoTest {
 
         PageId pageId = new PageId(tableId,1);
         // 测试插入、删除
-        DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+        DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
         Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
 
         int maxSlot = dbHeapPage.getMaxSlotNum();
@@ -158,10 +159,10 @@ public class DemoTest {
         Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),maxSlot);
 
         File file = new File("table1");
-        DBHeapFile table1File = new DBHeapFile(tableDesc,file);
+        DBFile table1File = new DBHeapFile(tableDesc,file);
 
         table1File.writePage(dbHeapPage);
-        DBHeapPage dbHeapPageCopy = table1File.readPage(dbHeapPage.getPageId());
+        DBPage dbHeapPageCopy = table1File.readPage(dbHeapPage.getPageId());
 
         Assert.assertEquals(dbHeapPageCopy.getNotEmptySlotsNum(),maxSlot);
     }

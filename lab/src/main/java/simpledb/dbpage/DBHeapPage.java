@@ -1,6 +1,5 @@
 package simpledb.dbpage;
 
-import simpledb.BufferPool;
 import simpledb.Database;
 import simpledb.dbrecord.Record;
 import simpledb.dbrecord.RecordId;
@@ -22,7 +21,7 @@ import java.util.stream.Collectors;
  * @author xiongyx
  * @date 2021/2/2
  */
-public class DBHeapPage implements Serializable {
+public class DBHeapPage implements DBPage {
 
     private TableDesc tableDesc;
     private PageId pageId;
@@ -76,6 +75,7 @@ public class DBHeapPage implements Serializable {
     /**
      * 序列化 内存结构化数据->磁盘二进制数据
      * */
+    @Override
     public byte[] serialize() throws IOException {
         int len = Database.getBufferPool().getPageSize();
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(len);
@@ -173,6 +173,7 @@ public class DBHeapPage implements Serializable {
     /**
      * 插入一条记录
      * */
+    @Override
     public void insertRecord(Record newRecord){
         if (!newRecord.getTableDesc().equals(tableDesc)){
             throw new DBException("table desc not match");
@@ -186,7 +187,8 @@ public class DBHeapPage implements Serializable {
     /**
      * 删除一条记录
      * */
-    public boolean deleteRecord(Record recordNeedDelete){
+    @Override
+    public void deleteRecord(Record recordNeedDelete){
         if (!recordNeedDelete.getTableDesc().equals(tableDesc)){
             throw new DBException("table desc not match");
         }
@@ -201,10 +203,9 @@ public class DBHeapPage implements Serializable {
                 recordArray[i] = null;
             }
         }
-
-        return true;
     }
 
+    @Override
     public int getNotEmptySlotsNum() {
         int notEmptySlotNum = 0;
         for (boolean b : this.bitMapHeaderArray) {
@@ -215,6 +216,7 @@ public class DBHeapPage implements Serializable {
         return notEmptySlotNum;
     }
 
+    @Override
     public int getMaxSlotNum(){
         // BufferPool.getPageSize() * 8 => 每个HeapPage的字节数 * 8 => 每个HeapPage的字节数bit数（1Byte字节=8bit）
         int pageTotalBit = Database.getBufferPool().getPageSize() * 8;
@@ -226,8 +228,14 @@ public class DBHeapPage implements Serializable {
         return pageTotalBit / perRecordBit;
     }
 
+    @Override
     public PageId getPageId() {
         return pageId;
+    }
+
+    @Override
+    public Iterator<Record> iterator() {
+        return new HeapPageIterator();
     }
 
     // =============================== Page页迭代器 ====================================
@@ -259,9 +267,5 @@ public class DBHeapPage implements Serializable {
         public Record next() {
             return iter.next();
         }
-    }
-
-    public Iterator<Record> iterator() {
-        return new HeapPageIterator();
     }
 }

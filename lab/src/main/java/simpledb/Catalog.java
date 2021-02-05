@@ -1,6 +1,6 @@
 package simpledb;
 
-import simpledb.dbfile.DBHeapFile;
+import simpledb.dbfile.DBFile;
 import simpledb.exception.DBException;
 import simpledb.matadata.table.TableDesc;
 
@@ -19,8 +19,8 @@ public class Catalog {
         tableMap = new ConcurrentHashMap<>();
     }
 
-    public void addTable(String tableId, TableDesc tableDesc, DBHeapFile dbHeapFile){
-        tableMap.put(tableId,new TableInfo(tableDesc,dbHeapFile,tableId));
+    public void addTable(String tableId, TableDesc tableDesc, DBFile dbFile){
+        tableMap.put(tableId,new TableInfo(tableDesc,dbFile,tableId));
     }
 
     public TableInfo getTableById(String tableId){
@@ -35,12 +35,12 @@ public class Catalog {
 
     public class TableInfo{
         private TableDesc tableDesc;
-        private DBHeapFile dbHeapFile;
+        private DBFile dbFile;
         private String tableId;
 
-        public TableInfo(TableDesc tableDesc, DBHeapFile dbHeapFile, String tableId) {
+        public TableInfo(TableDesc tableDesc, DBFile dbFile, String tableId) {
             this.tableDesc = tableDesc;
-            this.dbHeapFile = dbHeapFile;
+            this.dbFile = dbFile;
             this.tableId = tableId;
         }
 
@@ -48,8 +48,8 @@ public class Catalog {
             return tableDesc;
         }
 
-        public DBHeapFile getDbHeapFile() {
-            return dbHeapFile;
+        public DBFile getDbFile() {
+            return dbFile;
         }
 
         public String getTableId() {

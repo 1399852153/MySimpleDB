@@ -2,6 +2,7 @@ package simpledb.dbfile;
 
 import simpledb.Database;
 import simpledb.dbpage.DBHeapPage;
+import simpledb.dbpage.DBPage;
 import simpledb.dbpage.PageId;
 import simpledb.dbrecord.Record;
 import simpledb.exception.DBException;
@@ -19,7 +20,7 @@ import java.util.NoSuchElementException;
  * @author xiongyx
  * @date 2021/2/2
  */
-public class DBHeapFile {
+public class DBHeapFile implements DBFile{
 
     private final TableDesc tableDesc;
     private final File dbFile;
@@ -29,10 +30,12 @@ public class DBHeapFile {
         this.dbFile = dbFile;
     }
 
+    @Override
     public TableDesc getTableDesc() {
         return tableDesc;
     }
 
+    @Override
     public File getDbFile() {
         return dbFile;
     }
@@ -40,7 +43,8 @@ public class DBHeapFile {
     /**
      * 读取一个页
      */
-    public DBHeapPage readPage(PageId pageId) {
+    @Override
+    public DBPage readPage(PageId pageId) {
         String tableId = pageId.getTableId();
         int pgNo = pageId.getPageNo();
         final int pageSize = Database.getBufferPool().getPageSize();
@@ -61,13 +65,14 @@ public class DBHeapFile {
     /**
      * 读取一个页
      */
-    public void writePage(DBHeapPage dbHeapPage) {
-        PageId pageId = dbHeapPage.getPageId();
+    @Override
+    public void writePage(DBPage dbPage) {
+        PageId pageId = dbPage.getPageId();
         int pgNo = pageId.getPageNo();
 
         final int pageSize = Database.getBufferPool().getPageSize();
         try {
-            byte[] pgData = dbHeapPage.serialize();
+            byte[] pgData = dbPage.serialize();
             RandomAccessFile randomAccessFile = new RandomAccessFile(this.dbFile, "rws");
             // 找到对应的位置
             randomAccessFile.skipBytes(pgNo * pageSize);
@@ -79,17 +84,18 @@ public class DBHeapFile {
     }
 
     /**
-     * 当前文件存在多少页
-     */
-    public int getPageNum() {
-        return (int) dbFile.length() / Database.getBufferPool().getPageSize();
+     * 获得文件的迭代器
+     * */
+    @Override
+    public DbFileIterator<Record> getIterator(){
+        return new HeapFileIterator(this.tableDesc.getTableId());
     }
 
     /**
-     * 获得当前
-     * */
-    public DbFileIterator<Record> getIterator(){
-        return new HeapFileIterator(this.tableDesc.getTableId());
+     * 当前文件存在多少页
+     */
+    private int getPageNum() {
+        return (int) dbFile.length() / Database.getBufferPool().getPageSize();
     }
 
     // =============================== DBFile迭代器 ====================================
