@@ -11,6 +11,10 @@ import simpledb.dbrecord.Record;
 import simpledb.dbrecord.RecordId;
 import simpledb.iterator.DbFileIterator;
 import simpledb.iterator.Predicate;
+import simpledb.iterator.aggregator.Aggregator;
+import simpledb.iterator.aggregator.IntAggregator;
+import simpledb.iterator.enums.AggregatorOpEnum;
+import simpledb.iterator.operator.DbIterator;
 import simpledb.iterator.operator.SeqScan;
 import simpledb.iterator.enums.OperatorEnum;
 import simpledb.iterator.operator.Filter;
@@ -82,7 +86,7 @@ public class DBIteratorTest {
 
         while(dbFileIterator.hasNext()){
             Record record = dbFileIterator.next();
-            // System.out.println("testDBFileIterator：" + record);
+             System.out.println("testDBFileIterator：" + record);
         }
         Assert.assertFalse(dbFileIterator.hasNext());
         dbFileIterator.reset();
@@ -219,5 +223,51 @@ public class DBIteratorTest {
         Assert.assertFalse(nextFilter.hasNext());
         nextFilter.reset();
         Assert.assertTrue(nextFilter.hasNext());
+    }
+
+    @Test
+    public void testAggregator(){
+        int pageNum = 3;
+        for(int j=0; j<pageNum; j++) {
+            PageId pageId = new PageId(tableId,j);
+            // 测试插入、删除
+            DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+            Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
+
+            int maxSlot = dbHeapPage.getMaxSlotNum();
+            for (int i = 0; i < maxSlot; i++) {
+                Record record = new Record();
+                record.setRecordId(new RecordId(pageId, i));
+                record.setTableDesc(tableDesc);
+                record.setFieldList(Arrays.asList(
+                        new IntField(i),
+                        new IntField(j),
+                        new StringField("seqScan a" + i + "-b" + j))
+                );
+                dbHeapPage.insertRecord(record);
+            }
+
+            table1File.writePage(dbHeapPage);
+        }
+
+        SeqScan seqScan = new SeqScan(table1File);
+        seqScan.open();
+
+        Aggregator aggregator = new IntAggregator(
+                0,1,ColumnTypeEnum.INT_TYPE, AggregatorOpEnum.SUM
+        );
+        while(seqScan.hasNext()){
+            Record record = seqScan.next();
+            aggregator.mergeNewRecord(record);
+        }
+
+        DbIterator dbIterator = aggregator.iterator();
+        dbIterator.open();
+
+        while(dbIterator.hasNext()){
+            Record record = dbIterator.next();
+            System.out.println(record);
+        }
+
     }
 }
