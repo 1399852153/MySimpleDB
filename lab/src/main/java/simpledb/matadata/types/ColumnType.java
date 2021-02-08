@@ -12,4 +12,6 @@ public interface ColumnType {
 
     int getLength();
     Field parse(DataInputStream dataInputStream);
+
+    Class javaType();
 }

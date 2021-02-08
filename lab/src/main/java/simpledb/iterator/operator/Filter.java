@@ -1,21 +1,18 @@
 package simpledb.iterator.operator;
 
 import simpledb.dbrecord.Record;
-import simpledb.iterator.DbFileIterator;
-import simpledb.iterator.DbIterator;
 import simpledb.iterator.Predicate;
+import simpledb.matadata.table.TableDesc;
 
 /**
  * @author xiongyx
  * @date 2021/2/5
  */
-public class Filter implements DbFileIterator<Record> {
+public class Filter implements DbIterator {
 
     private final Predicate predicate;
-    private DbIterator childItr;
-    private boolean open;
+    private final DbIterator childItr;
     private Record nextRecord;
-
 
     public Filter(Predicate predicate, DbIterator childItr) {
         this.predicate = predicate;
@@ -23,14 +20,17 @@ public class Filter implements DbFileIterator<Record> {
     }
 
     @Override
+    public TableDesc getTupleDesc() {
+        return childItr.getTupleDesc();
+    }
+
+    @Override
     public void open() {
-        this.open = true;
         this.childItr.open();
     }
 
     @Override
     public void close() {
-        this.open = false;
         this.childItr.close();
     }
 
@@ -41,6 +41,10 @@ public class Filter implements DbFileIterator<Record> {
 
     @Override
     public boolean hasNext() {
+        if(this.nextRecord != null){
+            return true;
+        }
+
         while (childItr.hasNext()) {
             Record next = childItr.next();
             if (predicate.filter(next)) {

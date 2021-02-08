@@ -14,9 +14,11 @@ public interface Field {
 
     void serialize(DataOutputStream dos);
 
-     boolean compare(OperatorEnum operatorEnum, Field value);
+    boolean compare(OperatorEnum operatorEnum, Field value);
 
     ColumnTypeEnum getType();
 
     String toString();
+
+    Object getValue();
 }

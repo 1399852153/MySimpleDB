@@ -44,4 +44,12 @@ public class RecordId {
     public int hashCode() {
         return Objects.hash(pageId, pageInnerNo);
     }
+
+    @Override
+    public String toString() {
+        return "RecordId{" +
+                "pageId=" + pageId +
+                ", pageInnerNo=" + pageInnerNo +
+                '}';
+    }
 }

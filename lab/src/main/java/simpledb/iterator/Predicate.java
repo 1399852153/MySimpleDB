@@ -10,9 +10,15 @@ import simpledb.matadata.fields.Field;
  */
 public class Predicate {
 
-    private OperatorEnum operatorEnum;
-    private Field compareTarget;
-    private int targetColumnIndex;
+    private final OperatorEnum operatorEnum;
+    private final Field compareTarget;
+    private final int targetColumnIndex;
+
+    public Predicate(OperatorEnum operatorEnum, Field compareTarget, int targetColumnIndex) {
+        this.operatorEnum = operatorEnum;
+        this.compareTarget = compareTarget;
+        this.targetColumnIndex = targetColumnIndex;
+    }
 
     public boolean filter(Record record){
         Field recordField = record.getField(targetColumnIndex);

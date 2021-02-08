@@ -4,6 +4,7 @@ import simpledb.matadata.types.ColumnType;
 import simpledb.matadata.types.ColumnTypeEnum;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * @author xiongyx
@@ -13,6 +14,11 @@ public class TableDesc {
 
     private String tableId;
     private List<ColumnTypeEnum> columnTypeEnumList;
+
+    public TableDesc(List<ColumnTypeEnum> columnTypeEnumList) {
+        this.tableId = UUID.randomUUID().toString();
+        this.columnTypeEnumList = columnTypeEnumList;
+    }
 
     public TableDesc(String tableId, List<ColumnTypeEnum> tableColumnList) {
         this.tableId = tableId;

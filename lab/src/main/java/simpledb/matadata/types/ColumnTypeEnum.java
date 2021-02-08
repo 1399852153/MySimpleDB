@@ -21,6 +21,11 @@ public enum ColumnTypeEnum implements ColumnType{
         public Field parse(DataInputStream dataInputStream) {
             return new IntField(dataInputStream);
         }
+
+        @Override
+        public Class<Integer> javaType() {
+            return Integer.class;
+        }
     },
     STRING_TYPE(){
         @Override
@@ -31,6 +36,11 @@ public enum ColumnTypeEnum implements ColumnType{
         @Override
         public Field parse(DataInputStream dataInputStream) {
             return new StringField(dataInputStream);
+        }
+
+        @Override
+        public Class<String> javaType() {
+            return String.class;
         }
     },
     ;

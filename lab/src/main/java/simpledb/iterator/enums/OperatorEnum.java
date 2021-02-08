@@ -12,15 +12,15 @@ public enum OperatorEnum {
     LESS_THAN_OR_EQ("<="),
     GREATER_THAN_OR_EQ(">="),
     LIKE("%LIKE%"),
-    LEFT_LIKE("%LIKE"),
-    RIGHT_LIKE("LIKE%"),
+    LEFT_LIKE("LIKE%"),
+    RIGHT_LIKE("%LIKE"),
     NOT_EQUALS("<>");
 
     OperatorEnum(String view) {
         this.view = view;
     }
 
-    private String view;
+    private final String view;
 
     public String getView() {
         return view;

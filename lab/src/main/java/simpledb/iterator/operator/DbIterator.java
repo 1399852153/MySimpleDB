@@ -1,4 +1,4 @@
-package simpledb.iterator;
+package simpledb.iterator.operator;
 
 import simpledb.dbrecord.Record;
 import simpledb.matadata.table.TableDesc;

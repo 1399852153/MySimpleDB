@@ -14,6 +14,13 @@ public class Record {
     private TableDesc tableDesc;
     private List<Field> fieldList;
 
+    public Record() {
+    }
+
+    public Record(TableDesc tableDesc) {
+        this.tableDesc = tableDesc;
+    }
+
     public Field getField(int index){
         return this.fieldList.get(index);
     }

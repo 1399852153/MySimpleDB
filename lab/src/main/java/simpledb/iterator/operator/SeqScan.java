@@ -1,13 +1,15 @@
-package simpledb.iterator;
+package simpledb.iterator.operator;
 
 import simpledb.dbfile.DBFile;
 import simpledb.dbrecord.Record;
+import simpledb.iterator.DbFileIterator;
+import simpledb.matadata.table.TableDesc;
 
 /**
  * @author xiongyx
  * @date 2021/2/5
  */
-public class SeqScan implements DbFileIterator<Record>{
+public class SeqScan implements DbIterator {
 
     private DBFile dbFile;
     private DbFileIterator<Record> dbFileIterator;
@@ -15,6 +17,11 @@ public class SeqScan implements DbFileIterator<Record>{
     public SeqScan(DBFile dbFile) {
         this.dbFile = dbFile;
         this.dbFileIterator = dbFile.getIterator();
+    }
+
+    @Override
+    public TableDesc getTupleDesc() {
+        return dbFile.getTableDesc();
     }
 
     @Override

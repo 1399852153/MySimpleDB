@@ -2,7 +2,6 @@ package simpledb.matadata.fields;
 
 import simpledb.exception.DBException;
 import simpledb.exception.ParseException;
-import simpledb.iterator.Predicate;
 import simpledb.iterator.enums.OperatorEnum;
 import simpledb.matadata.types.ColumnTypeEnum;
 
@@ -16,10 +15,10 @@ import java.io.IOException;
  */
 public class IntField implements Field {
 
-    private int value;
+    private final Integer value;
     private final ColumnTypeEnum columnType = ColumnTypeEnum.INT_TYPE;
 
-    public IntField(int value) {
+    public IntField(Integer value) {
         this.value = value;
     }
 
@@ -72,6 +71,11 @@ public class IntField implements Field {
     @Override
     public ColumnTypeEnum getType() {
         return columnType;
+    }
+
+    @Override
+    public Integer getValue() {
+        return value;
     }
 
     @Override

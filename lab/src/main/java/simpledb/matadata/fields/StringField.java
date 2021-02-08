@@ -2,7 +2,6 @@ package simpledb.matadata.fields;
 
 import simpledb.exception.DBException;
 import simpledb.exception.ParseException;
-import simpledb.iterator.Predicate;
 import simpledb.iterator.enums.OperatorEnum;
 import simpledb.matadata.types.ColumnTypeEnum;
 
@@ -109,6 +108,11 @@ public class StringField implements Field {
     @Override
     public ColumnTypeEnum getType() {
         return columnTypeEnum;
+    }
+
+    @Override
+    public String getValue() {
+        return value;
     }
 
     @Override
