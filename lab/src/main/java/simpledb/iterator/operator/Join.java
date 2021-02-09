@@ -97,16 +97,20 @@ public class Join implements DbIterator{
             this.next = null;
             return next;
         }
+        if(left == null && right == null){
+            return null;
+        }
 
         while (true) {
+            Record next = null;
+
             if(joinPredicate.filter(left,right)){
                 // left和right匹配join的条件，构造left+right join之后的record记录
-                Record next = new Record(this.getTupleDesc());
+                next = new Record(this.getTupleDesc());
                 List<Field> nextRecordFieldList = new ArrayList<>();
                 nextRecordFieldList.addAll(left.getFieldList());
                 nextRecordFieldList.addAll(right.getFieldList());
                 next.setFieldList(nextRecordFieldList);
-                return next;
             }
 
             // 尝试寻找下一个匹配项
@@ -127,8 +131,12 @@ public class Join implements DbIterator{
                     // child1和child2都迭代完了
                     left = null;
                     right = null;
-                    return null;
+                    return next;
                 }
+            }
+
+            if(next != null){
+                return next;
             }
         }
     }

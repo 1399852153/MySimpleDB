@@ -51,9 +51,6 @@ public class Record {
 
     @Override
     public String toString() {
-        return "Record{" +
-                "recordId=" + recordId +
-                ", fieldList=" + fieldList +
-                '}';
+        return fieldList.toString();
     }
 }

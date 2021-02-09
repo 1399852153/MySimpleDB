@@ -80,8 +80,6 @@ public class IntField implements Field {
 
     @Override
     public String toString() {
-        return "IntField{" +
-                "value=" + value +
-                '}';
+        return "{" + this.value + "}";
     }
 }

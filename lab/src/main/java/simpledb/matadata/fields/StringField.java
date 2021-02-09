@@ -117,8 +117,6 @@ public class StringField implements Field {
 
     @Override
     public String toString() {
-        return "StringField{" +
-                "value='" + value + '\'' +
-                '}';
+        return "{'" + value + "'}";
     }
 }

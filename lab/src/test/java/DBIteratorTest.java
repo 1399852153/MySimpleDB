@@ -10,11 +10,13 @@ import simpledb.dbpage.PageId;
 import simpledb.dbrecord.Record;
 import simpledb.dbrecord.RecordId;
 import simpledb.iterator.DbFileIterator;
+import simpledb.iterator.JoinPredicate;
 import simpledb.iterator.Predicate;
 import simpledb.iterator.aggregator.Aggregator;
 import simpledb.iterator.aggregator.IntAggregator;
 import simpledb.iterator.enums.AggregatorOpEnum;
 import simpledb.iterator.operator.DbIterator;
+import simpledb.iterator.operator.Join;
 import simpledb.iterator.operator.SeqScan;
 import simpledb.iterator.enums.OperatorEnum;
 import simpledb.iterator.operator.Filter;
@@ -271,6 +273,72 @@ public class DBIteratorTest {
 
     @Test
     public void testJoin(){
+        String tableId2 = "people-friend";
+        TableDesc tableDesc2 = new TableDesc(
+                tableId2,
+                new ColumnTypeEnum[]{
+                        ColumnTypeEnum.STRING_TYPE,
+                        ColumnTypeEnum.INT_TYPE,
+                        ColumnTypeEnum.INT_TYPE
+                        }
+        );
 
+        File file2 = new File("table2");
+        DBFile table2File = new DBHeapFile(tableDesc2,file2);
+        Database.getCatalog().addTable(tableId2,tableDesc2,table2File);
+
+        int pageNum = 1;
+        for(int j=0; j<pageNum; j++) {
+            PageId pageId = new PageId(tableId,j);
+            DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+
+            for (int i = 0; i < 5; i++) {
+                Record record = new Record();
+                record.setRecordId(new RecordId(pageId, i));
+                record.setTableDesc(tableDesc);
+                record.setFieldList(Arrays.asList(
+                        new IntField(i),
+                        new IntField(j),
+                        new StringField("seqScan a" + i + "-b" + j))
+                );
+                dbHeapPage.insertRecord(record);
+            }
+
+            table1File.writePage(dbHeapPage);
+
+            PageId pageId2 = new PageId(tableId2,j);
+            DBPage dbHeapPage2 = new DBHeapPage(tableDesc2,pageId2,new byte[Database.getBufferPool().getPageSize()]);
+
+            for (int i = 0; i < 10; i++) {
+                Record record = new Record();
+                record.setRecordId(new RecordId(pageId, i));
+                record.setTableDesc(tableDesc2);
+                record.setFieldList(Arrays.asList(
+                        new StringField("seqScan2 a" + i + "-b" + j),
+                        new IntField(i),
+                        new IntField(j)
+                        )
+                );
+                dbHeapPage2.insertRecord(record);
+            }
+            table2File.writePage(dbHeapPage2);
+        }
+
+        SeqScan seqScan = new SeqScan(table1File);
+        System.out.println("seqScan1");
+        seqScan.preShow();
+
+        SeqScan seqScan2 = new SeqScan(table2File);
+        System.out.println("seqScan2");
+        seqScan2.preShow();
+
+        Join join = new Join(new JoinPredicate(0,1,OperatorEnum.EQUALS),seqScan,seqScan2);
+        join.open();
+        while(join.hasNext()){
+            Record record = join.next();
+            System.out.println(record);
+        }
+
+        Assert.assertFalse(join.hasNext());
     }
 }

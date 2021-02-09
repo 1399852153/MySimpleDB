@@ -48,4 +48,14 @@ public class SeqScan implements DbIterator {
     public Record next() {
         return dbFileIterator.next();
     }
+
+    public void preShow(){
+        this.open();
+        while(this.hasNext()){
+            Record record = this.next();
+            System.out.println(record);
+        }
+
+        this.reset();
+    }
 }
