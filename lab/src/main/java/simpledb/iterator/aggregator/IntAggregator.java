@@ -8,6 +8,7 @@ import simpledb.matadata.fields.Field;
 import simpledb.matadata.fields.FieldFactory;
 import simpledb.matadata.fields.IntField;
 import simpledb.matadata.table.TableDesc;
+import simpledb.matadata.table.TableDescItem;
 import simpledb.matadata.types.ColumnTypeEnum;
 
 import java.util.*;
@@ -147,10 +148,13 @@ public class IntAggregator implements Aggregator{
         @Override
         public TableDesc getTupleDesc() {
             if(isNoGroup()){
-                return new TableDesc(Collections.singletonList(ColumnTypeEnum.INT_TYPE));
+                return new TableDesc(Collections.singletonList(
+                        new TableDescItem("f1",ColumnTypeEnum.INT_TYPE)));
             }else {
                 return new TableDesc(
-                        Arrays.asList(IntAggregator.this.groupByFieldColumnType,ColumnTypeEnum.INT_TYPE)
+                        Arrays.asList(
+                                new TableDescItem("f1",IntAggregator.this.groupByFieldColumnType),
+                                new TableDescItem("f2",ColumnTypeEnum.INT_TYPE))
                 );
             }
         }

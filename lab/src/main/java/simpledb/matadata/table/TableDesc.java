@@ -3,8 +3,11 @@ package simpledb.matadata.table;
 import simpledb.matadata.types.ColumnType;
 import simpledb.matadata.types.ColumnTypeEnum;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * @author xiongyx
@@ -13,16 +16,30 @@ import java.util.UUID;
 public class TableDesc {
 
     private String tableId;
-    private List<ColumnTypeEnum> columnTypeEnumList;
+    private final List<TableDescItem> tableDescItemList;
 
-    public TableDesc(List<ColumnTypeEnum> columnTypeEnumList) {
+    public TableDesc(ColumnTypeEnum[] columnTypeEnumList){
         this.tableId = UUID.randomUUID().toString();
-        this.columnTypeEnumList = columnTypeEnumList;
+        this.tableDescItemList = new ArrayList<>();
+
+        for(int i=0; i<columnTypeEnumList.length; i++){
+            ColumnTypeEnum item = columnTypeEnumList[i];
+            tableDescItemList.add(new TableDescItem("f"+i,item));
+        }
     }
 
-    public TableDesc(String tableId, List<ColumnTypeEnum> tableColumnList) {
+    public TableDesc(String tableId, ColumnTypeEnum[] columnTypeEnumList) {
+        this(columnTypeEnumList);
         this.tableId = tableId;
-        this.columnTypeEnumList = tableColumnList;
+    }
+
+    public TableDesc(List<TableDescItem> tableDescItemList) {
+        this(UUID.randomUUID().toString(),tableDescItemList);
+    }
+
+    public TableDesc(String tableId, List<TableDescItem> tableDescItemList) {
+        this.tableId = tableId;
+        this.tableDescItemList = tableDescItemList;
     }
 
     public String getTableId() {
@@ -30,20 +47,21 @@ public class TableDesc {
     }
 
     public List<ColumnTypeEnum> getColumnTypeEnumList() {
-        return columnTypeEnumList;
+        return tableDescItemList.stream().map(TableDescItem::getColumnTypeEnum).collect(Collectors.toList());
     }
 
     public int getSize(){
-        return columnTypeEnumList.stream()
+        return tableDescItemList.stream()
+                .map(TableDescItem::getColumnTypeEnum)
                 .mapToInt(ColumnType::getLength)
                 .sum();
     }
 
     public int getColumnNum(){
-        return columnTypeEnumList.size();
+        return tableDescItemList.size();
     }
 
-    public ColumnTypeEnum getColumn(int index){
-        return columnTypeEnumList.get(index);
+    public TableDescItem getColumn(int index){
+        return tableDescItemList.get(index);
     }
 }

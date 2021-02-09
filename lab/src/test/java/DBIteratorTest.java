@@ -40,13 +40,11 @@ public class DBIteratorTest {
     public void setUp(){
         tableId = "people";
         tableDesc = new TableDesc(
-                "people",
-                Arrays.asList(
+                tableId,
+                new ColumnTypeEnum[]{ ColumnTypeEnum.INT_TYPE,
                         ColumnTypeEnum.INT_TYPE,
-                        ColumnTypeEnum.INT_TYPE,
-                        ColumnTypeEnum.STRING_TYPE
-                )
-        );
+                        ColumnTypeEnum.STRING_TYPE}
+                        );
 
         File file = new File("table1");
         table1File = new DBHeapFile(tableDesc,file);

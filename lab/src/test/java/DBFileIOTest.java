@@ -28,11 +28,9 @@ public class DBFileIOTest {
         String tableId = "people";
         TableDesc tableDesc = new TableDesc(
                 "people",
-                Arrays.asList(
+                new ColumnTypeEnum[]{ ColumnTypeEnum.INT_TYPE,
                         ColumnTypeEnum.INT_TYPE,
-                        ColumnTypeEnum.INT_TYPE,
-                        ColumnTypeEnum.STRING_TYPE
-                )
+                        ColumnTypeEnum.STRING_TYPE}
         );
 
         PageId pageId = new PageId(tableId,1);
@@ -87,11 +85,9 @@ public class DBFileIOTest {
         String tableId = "people";
         TableDesc tableDesc = new TableDesc(
                 "people",
-                Arrays.asList(
+                new ColumnTypeEnum[]{ ColumnTypeEnum.INT_TYPE,
                         ColumnTypeEnum.INT_TYPE,
-                        ColumnTypeEnum.INT_TYPE,
-                        ColumnTypeEnum.STRING_TYPE
-                )
+                        ColumnTypeEnum.STRING_TYPE}
         );
 
         PageId pageId = new PageId(tableId,1);
@@ -131,11 +127,9 @@ public class DBFileIOTest {
         String tableId = "people";
         TableDesc tableDesc = new TableDesc(
                 "people",
-                Arrays.asList(
+                new ColumnTypeEnum[]{ ColumnTypeEnum.INT_TYPE,
                         ColumnTypeEnum.INT_TYPE,
-                        ColumnTypeEnum.INT_TYPE,
-                        ColumnTypeEnum.STRING_TYPE
-                )
+                        ColumnTypeEnum.STRING_TYPE}
         );
 
         PageId pageId = new PageId(tableId,1);
