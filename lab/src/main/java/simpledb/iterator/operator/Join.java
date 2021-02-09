@@ -97,9 +97,6 @@ public class Join implements DbIterator{
             this.next = null;
             return next;
         }
-        if(left == null && right == null){
-            return null;
-        }
 
         while (true) {
             Record next = null;
@@ -131,6 +128,7 @@ public class Join implements DbIterator{
                     // child1和child2都迭代完了
                     left = null;
                     right = null;
+                    this.open = false;
                     return next;
                 }
             }

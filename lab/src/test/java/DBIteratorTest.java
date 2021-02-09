@@ -332,7 +332,7 @@ public class DBIteratorTest {
         System.out.println("seqScan2");
         seqScan2.preShow();
 
-        Join join = new Join(new JoinPredicate(0,1,OperatorEnum.EQUALS),seqScan,seqScan2);
+        Join join = new Join(new JoinPredicate(1,2,OperatorEnum.EQUALS),seqScan,seqScan2);
         join.open();
         while(join.hasNext()){
             Record record = join.next();
