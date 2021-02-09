@@ -128,6 +128,7 @@ public class Join implements DbIterator{
                     // child1和child2都迭代完了
                     left = null;
                     right = null;
+                    // 整个join迭代已经结束，open设置为false
                     this.open = false;
                     return next;
                 }
