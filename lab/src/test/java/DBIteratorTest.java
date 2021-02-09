@@ -268,4 +268,9 @@ public class DBIteratorTest {
         }
 
     }
+
+    @Test
+    public void testJoin(){
+
+    }
 }

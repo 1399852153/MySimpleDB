@@ -27,7 +27,7 @@ public class DBFileIOTest {
     public void testSerialize() throws IOException {
         String tableId = "people";
         TableDesc tableDesc = new TableDesc(
-                "people",
+                tableId,
                 new ColumnTypeEnum[]{ ColumnTypeEnum.INT_TYPE,
                         ColumnTypeEnum.INT_TYPE,
                         ColumnTypeEnum.STRING_TYPE}

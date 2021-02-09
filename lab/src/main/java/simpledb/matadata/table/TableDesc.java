@@ -18,13 +18,13 @@ public class TableDesc {
     private String tableId;
     private final List<TableDescItem> tableDescItemList;
 
-    public TableDesc(ColumnTypeEnum[] columnTypeEnumList){
+    public TableDesc(ColumnTypeEnum[] columnTypeEnumList) {
         this.tableId = UUID.randomUUID().toString();
         this.tableDescItemList = new ArrayList<>();
 
-        for(int i=0; i<columnTypeEnumList.length; i++){
+        for (int i = 0; i < columnTypeEnumList.length; i++) {
             ColumnTypeEnum item = columnTypeEnumList[i];
-            tableDescItemList.add(new TableDescItem("f"+i,item));
+            tableDescItemList.add(new TableDescItem("f" + i, item));
         }
     }
 
@@ -34,7 +34,7 @@ public class TableDesc {
     }
 
     public TableDesc(List<TableDescItem> tableDescItemList) {
-        this(UUID.randomUUID().toString(),tableDescItemList);
+        this(UUID.randomUUID().toString(), tableDescItemList);
     }
 
     public TableDesc(String tableId, List<TableDescItem> tableDescItemList) {
@@ -46,22 +46,35 @@ public class TableDesc {
         return tableId;
     }
 
+    public List<TableDescItem> getTableDescItemList() {
+        return tableDescItemList;
+    }
+
     public List<ColumnTypeEnum> getColumnTypeEnumList() {
         return tableDescItemList.stream().map(TableDescItem::getColumnTypeEnum).collect(Collectors.toList());
     }
 
-    public int getSize(){
+    public int getSize() {
         return tableDescItemList.stream()
                 .map(TableDescItem::getColumnTypeEnum)
                 .mapToInt(ColumnType::getLength)
                 .sum();
     }
 
-    public int getColumnNum(){
+    public int getColumnNum() {
         return tableDescItemList.size();
     }
 
-    public TableDescItem getColumn(int index){
+    public TableDescItem getColumn(int index) {
         return tableDescItemList.get(index);
+    }
+
+
+    public static TableDesc merge(TableDesc td1, TableDesc td2) {
+        List<TableDescItem> newTableDescItemList = new ArrayList<>();
+        newTableDescItemList.addAll(td1.getTableDescItemList());
+        newTableDescItemList.addAll(td2.getTableDescItemList());
+
+        return new TableDesc(newTableDescItemList);
     }
 }
