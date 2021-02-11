@@ -18,5 +18,6 @@ public interface DBPage {
     int getMaxSlotNum();
     PageId getPageId();
     Iterator<Record> iterator();
+    Iterator<Record> reverseIterator();
 }
 
