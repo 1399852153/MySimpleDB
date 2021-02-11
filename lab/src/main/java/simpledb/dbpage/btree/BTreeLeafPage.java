@@ -4,6 +4,7 @@ import simpledb.Database;
 import simpledb.dbpage.DBPage;
 import simpledb.dbpage.PageCommonUtil;
 import simpledb.dbpage.PageId;
+import simpledb.dbpage.normal.DBHeapPage;
 import simpledb.dbrecord.Record;
 import simpledb.dbrecord.RecordId;
 import simpledb.exception.DBException;
