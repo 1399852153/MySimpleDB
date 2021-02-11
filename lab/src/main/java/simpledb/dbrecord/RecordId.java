@@ -1,6 +1,6 @@
 package simpledb.dbrecord;
 
-import simpledb.dbpage.PageId;
+import simpledb.dbpage.normal.HeapPageId;
 
 import java.util.Objects;
 
@@ -12,14 +12,14 @@ public class RecordId {
     /**
      * 当前记录是属于哪一页的
      * */
-    private PageId pageId;
+    private HeapPageId pageId;
 
     /**
      * 当前记录在页内的下标记录号
      * */
     private int pageInnerNo;
 
-    public RecordId(PageId pageId, int pageInnerNo) {
+    public RecordId(HeapPageId pageId, int pageInnerNo) {
         this.pageId = pageId;
         this.pageInnerNo = pageInnerNo;
     }
@@ -28,7 +28,7 @@ public class RecordId {
         return pageInnerNo;
     }
 
-    public PageId getPageId() {
+    public HeapPageId getPageId() {
         return pageId;
     }
 

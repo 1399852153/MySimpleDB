@@ -4,9 +4,9 @@ import org.junit.Test;
 import simpledb.Database;
 import simpledb.dbfile.DBFile;
 import simpledb.dbfile.DBHeapFile;
-import simpledb.dbpage.DBHeapPage;
+import simpledb.dbpage.normal.DBHeapPage;
 import simpledb.dbpage.DBPage;
-import simpledb.dbpage.PageId;
+import simpledb.dbpage.normal.HeapPageId;
 import simpledb.dbrecord.Record;
 import simpledb.dbrecord.RecordId;
 import simpledb.iterator.DbFileIterator;
@@ -31,6 +31,8 @@ import java.util.Arrays;
 /**
  * @author xiongyx
  * @date 2021/2/5
+ *
+ * todo 单测用例不要使用临时文件解耦
  */
 public class DBIteratorTest {
 
@@ -57,7 +59,7 @@ public class DBIteratorTest {
     public void testDBFileIterator(){
         int pageNum = 3;
         for(int j=0; j<pageNum; j++) {
-            PageId pageId = new PageId(tableId,j);
+            HeapPageId pageId = new HeapPageId(tableId,j);
             // 测试插入、删除
             DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
             Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
@@ -97,7 +99,7 @@ public class DBIteratorTest {
     public void testSeqScan(){
         int pageNum = 3;
         for(int j=0; j<pageNum; j++) {
-            PageId pageId = new PageId(tableId,j);
+            HeapPageId pageId = new HeapPageId(tableId,j);
             // 测试插入、删除
             DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
             Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
@@ -137,7 +139,7 @@ public class DBIteratorTest {
     public void testFilterBase(){
         int pageNum = 3;
         for(int j=0; j<pageNum; j++) {
-            PageId pageId = new PageId(tableId,j);
+            HeapPageId pageId = new HeapPageId(tableId,j);
             // 测试插入、删除
             DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
             Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
@@ -180,7 +182,7 @@ public class DBIteratorTest {
     public void testFilterAdvance(){
         int pageNum = 3;
         for(int j=0; j<pageNum; j++) {
-            PageId pageId = new PageId(tableId,j);
+            HeapPageId pageId = new HeapPageId(tableId,j);
             // 测试插入、删除
             DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
             Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
@@ -229,7 +231,7 @@ public class DBIteratorTest {
     public void testAggregator(){
         int pageNum = 3;
         for(int j=0; j<pageNum; j++) {
-            PageId pageId = new PageId(tableId,j);
+            HeapPageId pageId = new HeapPageId(tableId,j);
             // 测试插入、删除
             DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
             Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
@@ -289,7 +291,7 @@ public class DBIteratorTest {
 
         int pageNum = 1;
         for(int j=0; j<pageNum; j++) {
-            PageId pageId = new PageId(tableId,j);
+            HeapPageId pageId = new HeapPageId(tableId,j);
             DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
 
             for (int i = 0; i < 5; i++) {
@@ -306,7 +308,7 @@ public class DBIteratorTest {
 
             table1File.writePage(dbHeapPage);
 
-            PageId pageId2 = new PageId(tableId2,j);
+            HeapPageId pageId2 = new HeapPageId(tableId2,j);
             DBPage dbHeapPage2 = new DBHeapPage(tableDesc2,pageId2,new byte[Database.getBufferPool().getPageSize()]);
 
             for (int i = 0; i < 10; i++) {

@@ -3,9 +3,9 @@ import org.junit.Test;
 import simpledb.Database;
 import simpledb.dbfile.DBFile;
 import simpledb.dbfile.DBHeapFile;
-import simpledb.dbpage.DBHeapPage;
+import simpledb.dbpage.normal.DBHeapPage;
 import simpledb.dbpage.DBPage;
-import simpledb.dbpage.PageId;
+import simpledb.dbpage.normal.HeapPageId;
 import simpledb.dbrecord.Record;
 import simpledb.dbrecord.RecordId;
 import simpledb.matadata.fields.IntField;
@@ -20,6 +20,8 @@ import java.util.Arrays;
 /**
  * @author xiongyx
  * @date 2021/2/1
+ *
+ * todo 单测用例不要使用临时文件解耦
  */
 public class DBFileIOTest {
 
@@ -33,7 +35,7 @@ public class DBFileIOTest {
                         ColumnTypeEnum.STRING_TYPE}
         );
 
-        PageId pageId = new PageId(tableId,1);
+        HeapPageId pageId = new HeapPageId(tableId,1);
 
         Record record1 = new Record();
         record1.setRecordId(new RecordId(pageId,1));
@@ -90,7 +92,7 @@ public class DBFileIOTest {
                         ColumnTypeEnum.STRING_TYPE}
         );
 
-        PageId pageId = new PageId(tableId,1);
+        HeapPageId pageId = new HeapPageId(tableId,1);
         // 测试插入、删除
         DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
         Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
@@ -132,7 +134,7 @@ public class DBFileIOTest {
                         ColumnTypeEnum.STRING_TYPE}
         );
 
-        PageId pageId = new PageId(tableId,1);
+        HeapPageId pageId = new HeapPageId(tableId,1);
         // 测试插入、删除
         DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
         Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);

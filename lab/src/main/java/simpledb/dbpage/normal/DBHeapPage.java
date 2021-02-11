@@ -1,6 +1,7 @@
-package simpledb.dbpage;
+package simpledb.dbpage.normal;
 
 import simpledb.Database;
+import simpledb.dbpage.DBPage;
 import simpledb.dbrecord.Record;
 import simpledb.dbrecord.RecordId;
 import simpledb.exception.DBException;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 public class DBHeapPage implements DBPage {
 
     private TableDesc tableDesc;
-    private PageId pageId;
+    private HeapPageId pageId;
     private int maxSlotNum;
 
     /**
@@ -33,7 +34,7 @@ public class DBHeapPage implements DBPage {
     private boolean[] bitMapHeaderArray;
     private Record[] recordArray;
 
-    public DBHeapPage(TableDesc tableDesc,PageId id, byte[] data) {
+    public DBHeapPage(TableDesc tableDesc, HeapPageId id, byte[] data) {
         try {
             deSerialize(tableDesc,id,data);
         } catch (IOException e) {
@@ -44,7 +45,7 @@ public class DBHeapPage implements DBPage {
     /**
      * 反序列化 磁盘二进制数据->内存结构化数据
      * */
-    private void deSerialize(TableDesc tableDesc, PageId pageId, byte[] data) throws IOException {
+    private void deSerialize(TableDesc tableDesc, HeapPageId pageId, byte[] data) throws IOException {
         this.tableDesc = tableDesc;
 
         this.pageId = pageId;
@@ -229,7 +230,7 @@ public class DBHeapPage implements DBPage {
     }
 
     @Override
-    public PageId getPageId() {
+    public HeapPageId getPageId() {
         return pageId;
     }
 

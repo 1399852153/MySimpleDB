@@ -1,8 +1,9 @@
 package simpledb.dbfile;
 
 import simpledb.Database;
-import simpledb.dbpage.DBHeapPage;
+import simpledb.dbpage.normal.DBHeapPage;
 import simpledb.dbpage.DBPage;
+import simpledb.dbpage.normal.HeapPageId;
 import simpledb.dbpage.PageId;
 import simpledb.dbrecord.Record;
 import simpledb.exception.DBException;
@@ -56,7 +57,7 @@ public class DBHeapFile implements DBFile{
             // 将二进制数据读取出来
             in.read(rawPgData);
             // 将二进制数据转换为DBHeapPage
-            return new DBHeapPage(this.tableDesc, new PageId(tableId, pgNo), rawPgData);
+            return new DBHeapPage(this.tableDesc, new HeapPageId(tableId, pgNo), rawPgData);
         } catch (IOException e) {
             throw new DBException("HeapFile readPage error");
         }
@@ -160,7 +161,7 @@ public class DBHeapFile implements DBFile{
         }
 
         private Iterator<Record> getNewPageIterator(int pgNo) {
-            PageId pid = new PageId(tableId, pgNo);
+            HeapPageId pid = new HeapPageId(tableId, pgNo);
             return Database
                     .getBufferPool()
                     .getPage(pid).iterator();
