@@ -24,9 +24,9 @@ import java.util.stream.Collectors;
  */
 public class DBHeapPage implements DBPage {
 
-    private TableDesc tableDesc;
-    private HeapPageId pageId;
-    private int maxSlotNum;
+    private final TableDesc tableDesc;
+    private final HeapPageId pageId;
+    private final int maxSlotNum;
 
     /**
      * header位图 true表示存在，false表示不存在
@@ -34,9 +34,12 @@ public class DBHeapPage implements DBPage {
     private boolean[] bitMapHeaderArray;
     private Record[] recordArray;
 
-    public DBHeapPage(TableDesc tableDesc, HeapPageId id, byte[] data) {
+    public DBHeapPage(TableDesc tableDesc, HeapPageId pageId, byte[] data) {
         try {
-            deSerialize(tableDesc,id,data);
+            this.tableDesc = tableDesc;
+            this.pageId = pageId;
+            this.maxSlotNum = getMaxSlotNum();
+            deSerialize(data);
         } catch (IOException e) {
             throw new ParseException("deSerialize DBHeapPage error",e);
         }
@@ -45,21 +48,16 @@ public class DBHeapPage implements DBPage {
     /**
      * 反序列化 磁盘二进制数据->内存结构化数据
      * */
-    private void deSerialize(TableDesc tableDesc, HeapPageId pageId, byte[] data) throws IOException {
-        this.tableDesc = tableDesc;
-
-        this.pageId = pageId;
-        this.maxSlotNum = getMaxSlotNum();
-
+    private void deSerialize(byte[] data) throws IOException {
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
 
         // 读取文件流，构造header位图
-        this.bitMapHeaderArray = new boolean[this.maxSlotNum];
+        this.bitMapHeaderArray = new boolean[this.getMaxSlotNum()];
         for (int i=0; i<bitMapHeaderArray.length; i++) {
             this.bitMapHeaderArray[i] = dis.readBoolean();
         }
         // 不满一个字节的，将其跳过
-        int needSkip = CommonUtil.bitCeilByte(this.maxSlotNum);
+        int needSkip = CommonUtil.bitCeilByte(this.getMaxSlotNum());
         for(int i=0; i<needSkip; i++){
             dis.readBoolean();
         }

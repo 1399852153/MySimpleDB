@@ -47,7 +47,7 @@ public class BTreeLeafPage implements DBPage {
     /**
      * 最大插槽数目
      * */
-    private int maxSlotNum;
+    private final int maxSlotNum;
 
     /**
      * 左兄弟叶子节点页指针 0代表null
@@ -66,7 +66,7 @@ public class BTreeLeafPage implements DBPage {
             this.keyFieldIndex = keyFieldIndex;
             this.maxSlotNum = this.getMaxSlotNum();
 
-            deSerialize(tableDesc,pageId,data);
+            deSerialize(data);
         } catch (IOException e) {
             throw new ParseException("deSerialize BTreeLeafPage error",e);
         }
@@ -75,7 +75,7 @@ public class BTreeLeafPage implements DBPage {
     /**
      * 反序列化 磁盘二进制数据->内存结构化数据
      * */
-    private void deSerialize(TableDesc tableDesc, BTreePageId pageId, byte[] data) throws IOException {
+    private void deSerialize(byte[] data) throws IOException {
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
 
         {
@@ -179,8 +179,7 @@ public class BTreeLeafPage implements DBPage {
         // 3 * INDEX_SIZE * 8 = 三个指针(左、右兄弟以及双亲节点指针)占据的bit数(Byte数 * 8)
         int extraBits = 3 * INDEX_SIZE * 8;
         // BTreeLeafPage页面可以容纳的最大插槽数 = 缓冲页面大小 - 额外的extraBits/每一个Tuple占用的空间
-        int tuplesPerPage = (Database.getBufferPool().getPageSize()*8 - extraBits) / bitsPerTupleIncludingHeader; //round down
-        return tuplesPerPage;
+        return (Database.getBufferPool().getPageSize()*8 - extraBits) / bitsPerTupleIncludingHeader;
     }
 
     @Override
