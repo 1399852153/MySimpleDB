@@ -2,6 +2,7 @@ package simpledb.dbpage.normal;
 
 import simpledb.Database;
 import simpledb.dbpage.DBPage;
+import simpledb.dbpage.PageCommonUtil;
 import simpledb.dbrecord.Record;
 import simpledb.dbrecord.RecordId;
 import simpledb.exception.DBException;
@@ -157,16 +158,6 @@ public class DBHeapPage implements DBPage {
         }
     }
 
-    private int getFirstEmptySlotIndex(){
-        for(int i=0; i<this.bitMapHeaderArray.length; i++){
-            if(!bitMapHeaderArray[i]){
-                return i;
-            }
-        }
-
-        throw new DBException("can't find a empty slot");
-    }
-
     // ==============================接口方法===========================
 
     /**
@@ -178,7 +169,7 @@ public class DBHeapPage implements DBPage {
             throw new DBException("table desc not match");
         }
 
-        int emptySlotIndex = getFirstEmptySlotIndex();
+        int emptySlotIndex = PageCommonUtil.getFirstEmptySlotIndex(this.bitMapHeaderArray);
         this.recordArray[emptySlotIndex] = newRecord;
         this.bitMapHeaderArray[emptySlotIndex] = true;
     }

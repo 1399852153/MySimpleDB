@@ -2,10 +2,13 @@ package simpledb.dbpage.btree;
 
 import simpledb.Database;
 import simpledb.dbpage.DBPage;
+import simpledb.dbpage.PageCommonUtil;
 import simpledb.dbpage.PageId;
 import simpledb.dbrecord.Record;
 import simpledb.dbrecord.RecordId;
+import simpledb.exception.DBException;
 import simpledb.exception.ParseException;
+import simpledb.iterator.enums.OperatorEnum;
 import simpledb.matadata.fields.Field;
 import simpledb.matadata.fields.IntField;
 import simpledb.matadata.table.TableDesc;
@@ -158,17 +161,72 @@ public class BTreeLeafPage implements DBPage {
 
     @Override
     public void insertRecord(Record newRecord) {
+        if (!newRecord.getTableDesc().equals(tableDesc)) {
+            throw new DBException("type mismatch, in addTuple");
+        }
 
+        // 找到一个空插槽
+        int emptySlotIndex = PageCommonUtil.getFirstEmptySlotIndex(this.bitMapHeaderArray);
+        // 由于B+树是有序的，找到当前页中小于或等于新增节点的最右下标
+        int targetIndex = findMostRightIndexLessThanTarget(newRecord);
+
+        // shift records back or forward to fill empty slot and make room for new record
+        // while keeping records in sorted order
+        int finallySlotIndex;
+        if(emptySlotIndex < targetIndex) {
+            // 空插槽对应的下标 < 匹配到的最右下标
+            for(int i = emptySlotIndex; i < targetIndex; i++) {
+                // 之间的数据进行向左的平移整理（下标i+1已使用，i未使用则向左平移一位）
+                moveRecord(i+1, i);
+            }
+            // 找到可以放下当前数据的插槽
+            finallySlotIndex = targetIndex;
+        }
+        else {
+            // 空插槽对应的下标 > 匹配到的最右下标
+            for(int i = emptySlotIndex; i > targetIndex + 1; i--) {
+                // 之间的数据进行向右的平移整理（下标i-1已使用，i未使用则向右平移一位）
+                moveRecord(i-1, i);
+            }
+            // 找到可以放下当前数据的插槽
+            finallySlotIndex = targetIndex + 1;
+        }
+
+        this.bitMapHeaderArray[finallySlotIndex] = true;
+        newRecord.setRecordId(new RecordId(pageId, finallySlotIndex));
+        this.recordArray[finallySlotIndex] = newRecord;
     }
 
     @Override
     public void deleteRecord(Record recordNeedDelete) {
+        RecordId recordId = recordNeedDelete.getRecordId();
+        if(recordId == null) {
+            throw new DBException("tried to delete tuple with null rid");
+        }
+        if((recordId.getPageId().getPageNo() != this.pageId.getPageNo())
+                || (recordNeedDelete.getTableDesc() != this.tableDesc)){
+            throw new DBException("tried to delete tuple on invalid page or table");
+        }
+        if (!this.bitMapHeaderArray[recordId.getPageInnerNo()]) {
+            throw new DBException("tried to delete null tuple.");
+        }
 
+        // 删除tuple时，将header对应位置空
+        this.bitMapHeaderArray[recordId.getPageInnerNo()] = false;
+        this.recordArray[recordId.getPageInnerNo()] = null;
+        // recordId置空
+        recordNeedDelete.setRecordId(null);
     }
 
     @Override
     public int getNotEmptySlotsNum() {
-        return 0;
+        int notEmptySlotNum = 0;
+        for (boolean b : this.bitMapHeaderArray) {
+            if (b) {
+                notEmptySlotNum += 1;
+            }
+        }
+        return notEmptySlotNum;
     }
 
     @Override
@@ -234,6 +292,45 @@ public class BTreeLeafPage implements DBPage {
             recordItem.getFieldList().forEach(
                     item->item.serialize(dos)
             );
+        }
+    }
+
+    /**
+     * 找到小于或等于参数target的最右下标
+     * */
+    private int findMostRightIndexLessThanTarget(Record target){
+        Field keyField = target.getField(this.keyFieldIndex);
+
+        int mostRightIndexLessThanTarget = -1;
+        for (int i=0; i<this.maxSlotNum; i++) {
+            if(this.bitMapHeaderArray[i]){
+                Field fieldItem = this.recordArray[i].getField(this.keyFieldIndex);
+                if(fieldItem.compare(OperatorEnum.LESS_THAN_OR_EQ, keyField)){
+                    mostRightIndexLessThanTarget = i;
+                }else{
+                    // 找到小于或等于参数target的最右下标
+                    return mostRightIndexLessThanTarget;
+                }
+            }
+        }
+
+        // 没有找到符合要求的最右下标
+        return -1;
+    }
+
+    /**
+     * from插槽中的数据迁移进to插槽中（修改recordArray和位图header）
+     */
+    private void moveRecord(int from, int to) {
+        // 必须from不为空有数据且to为空无数据
+        if(!this.bitMapHeaderArray[to] && this.bitMapHeaderArray[from]) {
+            this.bitMapHeaderArray[to] = true;
+            this.bitMapHeaderArray[from] = false;
+
+            Record fromRecord = this.recordArray[from];
+            fromRecord.setRecordId(new RecordId(this.pageId, to));
+            this.recordArray[to] = fromRecord;
+            this.recordArray[from] = null;
         }
     }
 }
