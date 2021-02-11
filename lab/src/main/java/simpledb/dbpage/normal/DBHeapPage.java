@@ -13,10 +13,7 @@ import simpledb.matadata.types.ColumnTypeEnum;
 import simpledb.util.CommonUtil;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -225,22 +222,34 @@ public class DBHeapPage implements DBPage {
 
     @Override
     public Iterator<Record> iterator() {
-        return new HeapPageIterator();
+        return new HeapPageIterator(false);
+    }
+
+    @Override
+    public Iterator<Record> reverseIterator() {
+        return new HeapPageIterator(true);
     }
 
     // =============================== Page页迭代器 ====================================
 
     private class HeapPageIterator implements Iterator<Record> {
         private final Iterator<Record> iter;
-        public HeapPageIterator() {
-            ArrayList<Record> tupleArrayList = new ArrayList<>();
+
+
+        public HeapPageIterator(boolean isReverse) {
+            ArrayList<Record> noEmptyRecordArrayList = new ArrayList<>();
             for (int i = 0; i < DBHeapPage.this.maxSlotNum; i++) {
                 if (DBHeapPage.this.bitMapHeaderArray[i]) {
                     // 过滤掉为recordList为空的插槽
-                    tupleArrayList.add(i, DBHeapPage.this.recordArray[i]);
+                    noEmptyRecordArrayList.add(i, DBHeapPage.this.recordArray[i]);
                 }
             }
-            iter = tupleArrayList.iterator();
+
+            if(isReverse){
+                Collections.reverse(noEmptyRecordArrayList);
+            }
+
+            iter = noEmptyRecordArrayList.iterator();
         }
 
         @Override
