@@ -4,12 +4,19 @@ import simpledb.Database;
 import simpledb.dbpage.DBPage;
 import simpledb.dbpage.PageId;
 import simpledb.dbrecord.Record;
+import simpledb.dbrecord.RecordId;
 import simpledb.exception.ParseException;
+import simpledb.matadata.fields.Field;
+import simpledb.matadata.fields.IntField;
 import simpledb.matadata.table.TableDesc;
 import simpledb.matadata.types.ColumnTypeEnum;
+import simpledb.util.CommonUtil;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 /**
  * @author xiongyx
@@ -30,12 +37,12 @@ public class BTreeLeafPage implements DBPage {
     /**
      * 头部位图
      */
-    private boolean[] header;
+    private boolean[] bitMapHeaderArray;
 
     /**
      * 所保存的数组列表
      * */
-    private Record[] tuples;
+    private Record[] recordArray;
 
     /**
      * 最大插槽数目
@@ -57,6 +64,8 @@ public class BTreeLeafPage implements DBPage {
             this.tableDesc = tableDesc;
             this.pageId = pageId;
             this.keyFieldIndex = keyFieldIndex;
+            this.maxSlotNum = this.getMaxSlotNum();
+
             deSerialize(tableDesc,pageId,data);
         } catch (IOException e) {
             throw new ParseException("deSerialize BTreeLeafPage error",e);
@@ -67,13 +76,84 @@ public class BTreeLeafPage implements DBPage {
      * 反序列化 磁盘二进制数据->内存结构化数据
      * */
     private void deSerialize(TableDesc tableDesc, BTreePageId pageId, byte[] data) throws IOException {
-        this.maxSlotNum = this.getMaxSlotNum();
+        DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
 
+        {
+            // 从文件中读取出最开始的int数据，是为双亲节点指针
+            IntField parentF = (IntField) ColumnTypeEnum.INT_TYPE.parse(dis);
+            this.parent = parentF.getValue();
+        }
+        {
+            // 从文件中读取出第二个int数据，是为左兄弟页指针
+            IntField leftSiblingF = (IntField) ColumnTypeEnum.INT_TYPE.parse(dis);
+            this.leftSibling = leftSiblingF.getValue();
+        }
+        {
+            // 从文件中读取出第三个int数据，是为右兄弟页指针
+            IntField rightSiblingF = (IntField) ColumnTypeEnum.INT_TYPE.parse(dis);
+            this.rightSibling = rightSiblingF.getValue();
+        }
+
+        this.bitMapHeaderArray = new boolean[this.getMaxSlotNum()];
+        for (int i = 0; i< bitMapHeaderArray.length; i++) {
+            // 读取出后续的header位图
+            bitMapHeaderArray[i] = dis.readBoolean();
+        }
+        // 不满一个字节的，将其跳过
+        int needSkip = CommonUtil.bitCeilByte(this.maxSlotNum);
+        for(int i=0; i<needSkip; i++){
+            dis.readBoolean();
+        }
+
+        // 解析所存储的业务数据
+        recordArray = new Record[this.getMaxSlotNum()];
+        for (int i = 0; i< recordArray.length; i++) {
+            // 读取并解析出tuple数据，加入tuples中
+            recordArray[i] = readNextRecord(dis, i);
+        }
+
+        dis.close();
     }
 
     @Override
     public byte[] serialize() throws IOException {
-        return new byte[0];
+        int len = Database.getBufferPool().getPageSize();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(len);
+        DataOutputStream dos = new DataOutputStream(byteArrayOutputStream);
+
+        // 首先写入parent、左/右兄弟三个指针
+        dos.writeInt(this.parent);
+        dos.writeInt(this.leftSibling);
+        dos.writeInt(this.rightSibling);
+
+        // 写入头部位图
+        for (boolean b : this.bitMapHeaderArray) {
+            dos.writeBoolean(b);
+        }
+        // 不满一个字节的，将其跳过
+        int needSkip = CommonUtil.bitCeilByte(this.maxSlotNum);
+        for(int i=0; i<needSkip; i++){
+            dos.writeBoolean(false);
+        }
+
+        // 写入record
+        for (int i=0; i<this.recordArray.length; i++) {
+            writeNextRecord(dos,i);
+        }
+
+        // 如果实际不足一页，用0填充页内剩余的空间(实际数据无法和页大小恰好对齐)
+        // 字节为单位 (页大小 - （位图大小bit * 8 + record长度 * record数量）)
+        int needPaddingLength = Database.getBufferPool().getPageSize() - (this.bitMapHeaderArray.length * 8 + this.tableDesc.getSize() * this.recordArray.length); //- numSlots * td.getSize();
+        if(needPaddingLength > 0){
+            byte[] zeroes = new byte[needPaddingLength];
+            // 后续空余的空间，用0补齐
+            dos.write(zeroes, 0, needPaddingLength);
+        }
+
+        // 强制刷新
+        dos.flush();
+
+        return byteArrayOutputStream.toByteArray();
     }
 
     @Override
@@ -111,5 +191,50 @@ public class BTreeLeafPage implements DBPage {
     @Override
     public Iterator<Record> iterator() {
         return null;
+    }
+
+    private Record readNextRecord(DataInputStream dis, int slotIndex) {
+        if (!this.bitMapHeaderArray[slotIndex]) {
+            // 位图显示记录不存在，文件指针直接跳过一个record的长度
+            for (int i=0; i<this.tableDesc.getSize(); i++) {
+                try {
+                    dis.readByte();
+                } catch (IOException e) {
+                    throw new NoSuchElementException("error reading empty btree record");
+                }
+            }
+            return null;
+        }else{
+            // 位图显示记录存在
+            Record record = new Record(this.tableDesc);
+            record.setRecordId(new RecordId(this.pageId,slotIndex));
+
+            List<ColumnTypeEnum> columnTypeEnumList = this.tableDesc.getColumnTypeEnumList();
+            // 按照表结构定义，读取出每一个字段的数据
+            List<Field> fieldList = columnTypeEnumList.stream()
+                    .map(item-> item.parse(dis))
+                    .collect(Collectors.toList());
+
+            record.setFieldList(fieldList);
+
+            return record;
+        }
+    }
+
+    private void writeNextRecord(DataOutputStream dos,int slotIndex) throws IOException {
+        if (!this.bitMapHeaderArray[slotIndex]) {
+            // 空的插槽，用0填充一个record大小的空间
+            for (int j=0; j<this.tableDesc.getSize(); j++) {
+                dos.writeByte(0);
+            }
+        }else{
+            // 非空插槽，写入数据
+
+            Record recordItem = this.recordArray[slotIndex];
+            // 按照表结构定义，向dos流按照顺序写出每一个字段的数据
+            recordItem.getFieldList().forEach(
+                    item->item.serialize(dos)
+            );
+        }
     }
 }
