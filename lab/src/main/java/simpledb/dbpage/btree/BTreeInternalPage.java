@@ -12,9 +12,7 @@ import simpledb.matadata.table.TableDescItem;
 import simpledb.matadata.types.ColumnTypeEnum;
 import simpledb.util.CommonUtil;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -95,7 +93,52 @@ public class BTreeInternalPage implements DBPage {
 
     @Override
     public byte[] serialize() throws IOException {
-        return new byte[0];
+        int len = Database.getBufferPool().getPageSize();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(len);
+        DataOutputStream dos = new DataOutputStream(byteArrayOutputStream);
+
+        dos.writeInt(parent);
+        dos.writeByte((byte) childCategory);
+
+        // 写入头部位图
+        for (boolean b : this.bitMapHeaderArray) {
+            dos.writeBoolean(b);
+        }
+        // 不满一个字节的，将其跳过
+        int needSkip = CommonUtil.bitCeilByte(this.maxSlotNum);
+        for (int i = 0; i < needSkip; i++) {
+            dos.writeBoolean(false);
+        }
+
+        // 写入keys(和初始化时一致，keys[0]为null不存储在磁盘中)
+        for (int i=1; i<keys.length; i++) {
+            writeNextKey(dos,i);
+        }
+
+        // 写入children
+        for (int i=0; i<children.length; i++) {
+            writeNextChild(dos,i);
+        }
+
+        // 如果实际不足一页，用0填充页内剩余的空间(实际数据无法和页大小恰好对齐)
+        int parentPointSpace = BTreeConstants.INDEX_SIZE;
+        int childCategoryToByteSpace = 1;
+        int bitMapHeaderArraySpace = (this.bitMapHeaderArray.length + needSkip)/8;
+        int keysSpace = this.tableDesc.getColumn(this.keyFieldIndex).getColumnTypeEnum().getLength() * (keys.length - 1);
+        int childrenSpace = BTreeConstants.INDEX_SIZE * children.length;
+
+        int needPaddingLength = Database.getBufferPool().getPageSize() -
+                (parentPointSpace + childCategoryToByteSpace + bitMapHeaderArraySpace + keysSpace + childrenSpace);
+        if (needPaddingLength > 0) {
+            byte[] zeroes = new byte[needPaddingLength];
+            // 后续空余的空间，用0补齐
+            dos.write(zeroes, 0, needPaddingLength);
+        }
+
+        // 强制刷新
+        dos.flush();
+
+        return byteArrayOutputStream.toByteArray();
     }
 
     @Override
@@ -137,7 +180,7 @@ public class BTreeInternalPage implements DBPage {
 
     @Override
     public PageId getPageId() {
-        return null;
+        return this.pageId;
     }
 
     @Override
@@ -150,10 +193,14 @@ public class BTreeInternalPage implements DBPage {
         return null;
     }
 
+    /**
+     * 读取一个key项
+     * */
     private Field readNextKey(DataInputStream dis, int slotIndex){
         if (!this.bitMapHeaderArray[slotIndex]) {
-            // 位图显示记录不存在，文件指针直接跳过一个record的长度
-            for (int i = 0; i < this.tableDesc.getSize(); i++) {
+            // 位图显示记录不存在，文件指针直接跳过一个KeyField的长度
+            TableDescItem tableDescItem = this.tableDesc.getColumn(this.keyFieldIndex);
+            for (int i = 0; i < tableDescItem.getColumnTypeEnum().getLength(); i++) {
                 try {
                     dis.readByte();
                 } catch (IOException e) {
@@ -167,11 +214,28 @@ public class BTreeInternalPage implements DBPage {
             return keyItem.getColumnTypeEnum().parse(dis);
         }
     }
+    /**
+     * 写入一个key项
+     * */
+    private void writeNextKey(DataOutputStream dos, int slotIndex) throws IOException {
+        if (!this.bitMapHeaderArray[slotIndex]) {
+            // 空的插槽，用0填充一个KeyField大小的空间
+            TableDescItem tableDescItem = this.tableDesc.getColumn(this.keyFieldIndex);
+            for (int j = 0; j < tableDescItem.getColumnTypeEnum().getLength(); j++) {
+                dos.writeByte(0);
+            }
+        } else {
+            this.keys[slotIndex].serialize(dos);
+        }
+    }
 
+    /**
+     * 读取一个child项
+     * */
     private int readNextChild(DataInputStream dis, int slotIndex){
         if (!this.bitMapHeaderArray[slotIndex]) {
-            // 位图显示记录不存在，文件指针直接跳过一个record的长度
-            for (int i = 0; i < this.tableDesc.getSize(); i++) {
+            // 位图显示记录不存在，文件指针直接跳过一个child索引的长度
+            for (int i = 0; i < BTreeConstants.INDEX_SIZE; i++) {
                 try {
                     dis.readByte();
                 } catch (IOException e) {
@@ -185,5 +249,17 @@ public class BTreeInternalPage implements DBPage {
             return intField.getValue();
         }
     }
-
+    /**
+     * 写入一个child项
+     * */
+    private void writeNextChild(DataOutputStream dos, int slotIndex) throws IOException {
+        if (!this.bitMapHeaderArray[slotIndex]) {
+            // 空的插槽，用0填充一个child索引大小的空间
+            for (int j = 0; j < BTreeConstants.INDEX_SIZE; j++) {
+                dos.writeByte(0);
+            }
+        } else {
+            dos.writeInt(children[slotIndex]);
+        }
+    }
 }

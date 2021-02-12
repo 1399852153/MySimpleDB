@@ -141,8 +141,10 @@ public class BTreeLeafPage implements DBPage {
         }
 
         // 如果实际不足一页，用0填充页内剩余的空间(实际数据无法和页大小恰好对齐)
-        // 字节为单位 (页大小 - （位图大小bit * 8 + record长度 * record数量）)
-        int needPaddingLength = Database.getBufferPool().getPageSize() - (this.bitMapHeaderArray.length * 8 + this.tableDesc.getSize() * this.recordArray.length); //- numSlots * td.getSize();
+        // 字节为单位 (页大小 - (位图大小bit + needSkip)/8 + record长度 * record数量）)
+        // 不满一个字节的，将其跳过
+        int needPaddingLength = Database.getBufferPool().getPageSize() -
+                ((this.bitMapHeaderArray.length + needSkip)/8 + this.tableDesc.getSize() * this.recordArray.length);
         if (needPaddingLength > 0) {
             byte[] zeroes = new byte[needPaddingLength];
             // 后续空余的空间，用0补齐
