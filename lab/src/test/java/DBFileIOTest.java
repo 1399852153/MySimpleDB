@@ -65,7 +65,7 @@ public class DBFileIOTest {
         );
 
         // 测试插入、删除
-        DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+        DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
         dbHeapPage.insertRecord(record1);
         dbHeapPage.insertRecord(record2);
         dbHeapPage.insertRecord(record3);
@@ -76,7 +76,7 @@ public class DBFileIOTest {
 
         // 测试序列化/反序列化
         byte[] bytes = dbHeapPage.serialize();
-        DBPage dbHeapPageCopy = new DBHeapPage(tableDesc,pageId,bytes);
+        DBHeapPage dbHeapPageCopy = new DBHeapPage(tableDesc,pageId,bytes);
         Assert.assertEquals(dbHeapPageCopy.getNotEmptySlotsNum(),2);
         dbHeapPageCopy.insertRecord(record3);
         Assert.assertEquals(dbHeapPageCopy.getNotEmptySlotsNum(),3);
@@ -94,7 +94,7 @@ public class DBFileIOTest {
 
         HeapPageId pageId = new HeapPageId(tableId,1);
         // 测试插入、删除
-        DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+        DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
         Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
 
         int maxSlot = dbHeapPage.getMaxSlotNum();
@@ -114,7 +114,7 @@ public class DBFileIOTest {
 
         // 测试序列化/反序列化
         byte[] bytes = dbHeapPage.serialize();
-        DBPage dbHeapPageCopy = new DBHeapPage(tableDesc,pageId,bytes);
+        DBHeapPage dbHeapPageCopy = new DBHeapPage(tableDesc,pageId,bytes);
         Assert.assertEquals(dbHeapPageCopy.getNotEmptySlotsNum(),maxSlot);
 
         Record recordNeedDelete = new Record();
@@ -136,7 +136,7 @@ public class DBFileIOTest {
 
         HeapPageId pageId = new HeapPageId(tableId,1);
         // 测试插入、删除
-        DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+        DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
         Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
 
         int maxSlot = dbHeapPage.getMaxSlotNum();

@@ -157,7 +157,6 @@ public class BTreeLeafPage implements DBPage {
         return byteArrayOutputStream.toByteArray();
     }
 
-    @Override
     public void insertRecord(Record newRecord) {
         if (!newRecord.getTableDesc().equals(tableDesc)) {
             throw new DBException("type mismatch, in addTuple");
@@ -194,7 +193,6 @@ public class BTreeLeafPage implements DBPage {
         this.recordArray[finallySlotIndex] = newRecord;
     }
 
-    @Override
     public void deleteRecord(Record recordNeedDelete) {
         RecordId recordId = recordNeedDelete.getRecordId();
         if (recordId == null) {

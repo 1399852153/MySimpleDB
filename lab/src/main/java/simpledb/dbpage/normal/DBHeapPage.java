@@ -160,7 +160,6 @@ public class DBHeapPage implements DBPage {
     /**
      * 插入一条记录
      * */
-    @Override
     public void insertRecord(Record newRecord){
         if (!newRecord.getTableDesc().equals(tableDesc)){
             throw new DBException("table desc not match");
@@ -174,7 +173,6 @@ public class DBHeapPage implements DBPage {
     /**
      * 删除一条记录
      * */
-    @Override
     public void deleteRecord(Record recordNeedDelete){
         if (!recordNeedDelete.getTableDesc().equals(tableDesc)){
             throw new DBException("table desc not match");

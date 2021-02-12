@@ -61,7 +61,7 @@ public class DBIteratorTest {
         for(int j=0; j<pageNum; j++) {
             HeapPageId pageId = new HeapPageId(tableId,j);
             // 测试插入、删除
-            DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+            DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
             Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
 
             int maxSlot = dbHeapPage.getMaxSlotNum();
@@ -101,7 +101,7 @@ public class DBIteratorTest {
         for(int j=0; j<pageNum; j++) {
             HeapPageId pageId = new HeapPageId(tableId,j);
             // 测试插入、删除
-            DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+            DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
             Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
 
             int maxSlot = dbHeapPage.getMaxSlotNum();
@@ -141,7 +141,7 @@ public class DBIteratorTest {
         for(int j=0; j<pageNum; j++) {
             HeapPageId pageId = new HeapPageId(tableId,j);
             // 测试插入、删除
-            DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+            DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
             Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
 
             int maxSlot = dbHeapPage.getMaxSlotNum();
@@ -184,7 +184,7 @@ public class DBIteratorTest {
         for(int j=0; j<pageNum; j++) {
             HeapPageId pageId = new HeapPageId(tableId,j);
             // 测试插入、删除
-            DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+            DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
             Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
 
             int maxSlot = dbHeapPage.getMaxSlotNum();
@@ -233,7 +233,7 @@ public class DBIteratorTest {
         for(int j=0; j<pageNum; j++) {
             HeapPageId pageId = new HeapPageId(tableId,j);
             // 测试插入、删除
-            DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+            DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
             Assert.assertEquals(dbHeapPage.getNotEmptySlotsNum(),0);
 
             int maxSlot = dbHeapPage.getMaxSlotNum();
@@ -292,7 +292,7 @@ public class DBIteratorTest {
         int pageNum = 1;
         for(int j=0; j<pageNum; j++) {
             HeapPageId pageId = new HeapPageId(tableId,j);
-            DBPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
+            DBHeapPage dbHeapPage = new DBHeapPage(tableDesc,pageId,new byte[Database.getBufferPool().getPageSize()]);
 
             for (int i = 0; i < 5; i++) {
                 Record record = new Record();
@@ -309,7 +309,7 @@ public class DBIteratorTest {
             table1File.writePage(dbHeapPage);
 
             HeapPageId pageId2 = new HeapPageId(tableId2,j);
-            DBPage dbHeapPage2 = new DBHeapPage(tableDesc2,pageId2,new byte[Database.getBufferPool().getPageSize()]);
+            DBHeapPage dbHeapPage2 = new DBHeapPage(tableDesc2,pageId2,new byte[Database.getBufferPool().getPageSize()]);
 
             for (int i = 0; i < 10; i++) {
                 Record record = new Record();

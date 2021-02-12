@@ -12,8 +12,6 @@ import java.util.Iterator;
 public interface DBPage {
 
     byte[] serialize() throws IOException;
-    void insertRecord(Record newRecord);
-    void deleteRecord(Record recordNeedDelete);
     int getNotEmptySlotsNum();
     int getMaxSlotNum();
     PageId getPageId();

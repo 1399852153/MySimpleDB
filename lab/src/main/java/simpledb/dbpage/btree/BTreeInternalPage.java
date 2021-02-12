@@ -142,16 +142,6 @@ public class BTreeInternalPage implements DBPage {
     }
 
     @Override
-    public void insertRecord(Record newRecord) {
-
-    }
-
-    @Override
-    public void deleteRecord(Record recordNeedDelete) {
-
-    }
-
-    @Override
     public int getNotEmptySlotsNum() {
         int notEmptySlotNum = 0;
         for (boolean b : this.bitMapHeaderArray) {
