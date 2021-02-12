@@ -27,7 +27,7 @@ public class BTreeEntry {
     /**
      * The record id of this entry
      * */
-    private RecordId rid; // null if not stored on any page
+    private RecordId recordId; // null if not stored on any page
 
     public BTreeEntry(Field key, BTreePageId leftChild, BTreePageId rightChild) {
         this.key = key;
@@ -59,12 +59,12 @@ public class BTreeEntry {
         this.rightChild = rightChild;
     }
 
-    public RecordId getRid() {
-        return rid;
+    public RecordId getRecordId() {
+        return recordId;
     }
 
-    public void setRid(RecordId rid) {
-        this.rid = rid;
+    public void setRecordId(RecordId recordId) {
+        this.recordId = recordId;
     }
 
     /**

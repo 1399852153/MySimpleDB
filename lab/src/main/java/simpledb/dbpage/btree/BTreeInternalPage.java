@@ -4,6 +4,8 @@ import simpledb.Database;
 import simpledb.dbpage.DBPage;
 import simpledb.dbpage.PageId;
 import simpledb.dbrecord.Record;
+import simpledb.dbrecord.RecordId;
+import simpledb.exception.DBException;
 import simpledb.exception.ParseException;
 import simpledb.matadata.fields.Field;
 import simpledb.matadata.fields.IntField;
@@ -31,7 +33,7 @@ public class BTreeInternalPage implements DBPage {
 
     private boolean bitMapHeaderArray[];
     private Field keys[];
-    private int children[];
+    private Integer children[];
     private int maxSlotNum;
     private int childCategory; // either leaf or internal
 
@@ -76,16 +78,16 @@ public class BTreeInternalPage implements DBPage {
         // 解析所存储的keys
         this.keys = new Field[this.maxSlotNum];
         // keys和children是交错的，keys相对要少一个
-        // 逻辑视图：
-        //  k1 k2 k3
-        // c1 c2 c3 c4
+        // 逻辑视图（交错）：          物理视图（平行,k比c大1）
+        //  k1 k2 k3                ** k1 k2 k3
+        // c1 c2 c3 c4              c1 c2 c3 c4
         keys[0] = null;
         for(int i=1; i<keys.length; i++){
             keys[i] = readNextKey(dis,i);
         }
 
         // 解析所存储的children
-        this.children = new int[this.maxSlotNum];
+        this.children = new Integer[this.maxSlotNum];
         for (int i=0; i<children.length; i++) {
             children[i] = readNextChild(dis, i);
         }
@@ -173,6 +175,53 @@ public class BTreeInternalPage implements DBPage {
         return this.pageId;
     }
 
+    public void insertEntry(BTreeEntry e){
+
+    }
+
+    public void updateEntry(BTreeEntry e){
+
+    }
+
+    public void deleteKeyAndRightChild(BTreeEntry e){
+        deleteEntry(e,true);
+    }
+
+    public void deleteKeyAndLeftChild(BTreeEntry e){
+        deleteEntry(e,false);
+    }
+
+    private void deleteEntry(BTreeEntry e,boolean deleteRightChild){
+        RecordId recordId = e.getRecordId();
+        if(recordId == null) {
+            throw new DBException("tried to delete entry with null rid");
+        }
+        if((recordId.getPageId().getPageNo() != this.pageId.getPageNo()) || (recordId.getPageId().getTableId().equals(this.pageId.getTableId()))) {
+            throw new DBException("tried to delete entry on invalid page or table");
+        }
+        if (!this.bitMapHeaderArray[recordId.getPageInnerNo()]){
+            throw new DBException("tried to delete null entry.");
+        }
+
+
+        e.setRecordId(null);
+        int pageInnerNo = recordId.getPageInnerNo();
+        if(deleteRightChild){
+            this.bitMapHeaderArray[pageInnerNo] = false;
+            this.keys[pageInnerNo] = null;
+            this.children[pageInnerNo] = null;
+        }else {
+            // 如果需要删除的是左孩子，将BTreeEntry的右孩子迁移到左边（最靠右的非空插槽）
+            for(int i = pageInnerNo - 1; i >= 0; i--){
+                if(this.bitMapHeaderArray[pageInnerNo]){
+                    children[i] = children[pageInnerNo];
+                    this.bitMapHeaderArray[pageInnerNo] = false;
+                    return;
+                }
+            }
+        }
+    }
+
     @Override
     public Iterator<Record> iterator() {
         return null;
@@ -222,7 +271,7 @@ public class BTreeInternalPage implements DBPage {
     /**
      * 读取一个child项
      * */
-    private int readNextChild(DataInputStream dis, int slotIndex){
+    private Integer readNextChild(DataInputStream dis, int slotIndex){
         if (!this.bitMapHeaderArray[slotIndex]) {
             // 位图显示记录不存在，文件指针直接跳过一个child索引的长度
             for (int i = 0; i < BTreeConstants.INDEX_SIZE; i++) {
@@ -232,7 +281,7 @@ public class BTreeInternalPage implements DBPage {
                     throw new NoSuchElementException("error reading empty btree record");
                 }
             }
-            return -1;
+            return null;
         } else {
             // 位图显示记录存在
             IntField intField = (IntField) ColumnTypeEnum.INT_TYPE.parse(dis);
