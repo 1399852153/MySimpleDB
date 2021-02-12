@@ -27,13 +27,11 @@ import java.util.stream.Collectors;
  */
 public class BTreeLeafPage implements DBPage {
 
-    public final static int INDEX_SIZE = ColumnTypeEnum.INT_TYPE.getLength();
+    private final BTreePageId pageId;
+    private final TableDesc tableDesc;
+    private final int keyFieldIndex;
 
-    protected final BTreePageId pageId;
-    protected final TableDesc tableDesc;
-    protected int keyFieldIndex;
-
-    protected int parent; // parent is always internal node or 0 for root node
+    private int parent; // parent is always internal node or 0 for root node
 
     /**
      * 头部位图
@@ -61,12 +59,12 @@ public class BTreeLeafPage implements DBPage {
     private int rightSibling;
 
     public BTreeLeafPage(TableDesc tableDesc, BTreePageId pageId, byte[] data, int keyFieldIndex) {
-        try {
-            this.tableDesc = tableDesc;
-            this.pageId = pageId;
-            this.keyFieldIndex = keyFieldIndex;
-            this.maxSlotNum = this.getMaxSlotNum();
+        this.tableDesc = tableDesc;
+        this.pageId = pageId;
+        this.keyFieldIndex = keyFieldIndex;
+        this.maxSlotNum = this.getMaxSlotNum();
 
+        try {
             deSerialize(data);
         } catch (IOException e) {
             throw new ParseException("deSerialize BTreeLeafPage error", e);
@@ -232,7 +230,7 @@ public class BTreeLeafPage implements DBPage {
         int bitsPerTupleIncludingHeader = this.tableDesc.getSize() * 8 + 1;
         // extraBits are: left sibling pointer, right sibling pointer, parent pointer
         // 3 * INDEX_SIZE * 8 = 三个指针(左、右兄弟以及双亲节点指针)占据的bit数(Byte数 * 8)
-        int extraBits = 3 * INDEX_SIZE * 8;
+        int extraBits = 3 * BTreeConstants.INDEX_SIZE * 8;
         // BTreeLeafPage页面可以容纳的最大插槽数 = 缓冲页面大小 - 额外的extraBits/每一个Tuple占用的空间
         return (Database.getBufferPool().getPageSize() * 8 - extraBits) / bitsPerTupleIncludingHeader;
     }
