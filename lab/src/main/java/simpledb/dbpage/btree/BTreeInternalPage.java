@@ -7,6 +7,7 @@ import simpledb.dbrecord.Record;
 import simpledb.dbrecord.RecordId;
 import simpledb.exception.DBException;
 import simpledb.exception.ParseException;
+import simpledb.iterator.enums.OperatorEnum;
 import simpledb.matadata.fields.Field;
 import simpledb.matadata.fields.IntField;
 import simpledb.matadata.table.TableDesc;
@@ -180,7 +181,50 @@ public class BTreeInternalPage implements DBPage {
     }
 
     public void updateEntry(BTreeEntry e){
+        RecordId recordId = e.getRecordId();
 
+        // 校验start
+        if(recordId == null) {
+            throw new DBException("tried to update entry with null rid");
+        }
+        if((recordId.getPageId().getPageNo() != this.pageId.getPageNo()) || (recordId.getPageId().getTableId().equals(this.pageId.getTableId()))) {
+            throw new DBException("tried to update entry on invalid page or table");
+        }
+        if (!this.bitMapHeaderArray[recordId.getPageInnerNo()]){
+            throw new DBException("tried to update null entry.");
+        }
+
+        int pageInnerNo = recordId.getPageInnerNo();
+        for(int i = pageInnerNo + 1; i < this.maxSlotNum; i++) {
+            if(this.bitMapHeaderArray[i]) {
+                // 校验靠右边的第一个非空的key是否不比更新的key要小
+                if(keys[i].compare(OperatorEnum.LESS_THAN, e.getKey())) {
+                    throw new DBException("attempt to update entry with invalid key " + e.getKey() +
+                            " HINT: updated key must be less than or equal to keys on the right");
+                }else{
+                    // 校验通过
+                    break;
+                }
+            }
+        }
+        for(int i = pageInnerNo - 1; i >= 0; i--) {
+            if(this.bitMapHeaderArray[i]) {
+                // 校验靠左边的第一个非空的key是否不比更新的key要大
+                if(i > 0 && keys[i].compare(OperatorEnum.GREATER_THAN, e.getKey())) {
+                    throw new DBException("attempt to update entry with invalid key " + e.getKey() +
+                            " HINT: updated key must be greater than or equal to keys on the left");
+                }else {
+                    // 校验通过 更新left child
+                    children[i] = e.getLeftChild().getPageNo();
+                    break;
+                }
+            }
+        }
+        // 校验end
+
+        // 更新right children和keys
+        children[pageInnerNo] = e.getRightChild().getPageNo();
+        keys[pageInnerNo] = e.getKey();
     }
 
     public void deleteKeyAndRightChild(BTreeEntry e){
@@ -193,6 +237,8 @@ public class BTreeInternalPage implements DBPage {
 
     private void deleteEntry(BTreeEntry e,boolean deleteRightChild){
         RecordId recordId = e.getRecordId();
+
+        // 校验start
         if(recordId == null) {
             throw new DBException("tried to delete entry with null rid");
         }
@@ -202,7 +248,7 @@ public class BTreeInternalPage implements DBPage {
         if (!this.bitMapHeaderArray[recordId.getPageInnerNo()]){
             throw new DBException("tried to delete null entry.");
         }
-
+        // 校验end
 
         e.setRecordId(null);
         int pageInnerNo = recordId.getPageInnerNo();
