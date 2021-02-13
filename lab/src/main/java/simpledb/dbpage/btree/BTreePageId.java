@@ -22,6 +22,12 @@ public class BTreePageId implements PageId {
         this.pageNo = pageNo;
     }
 
+    public BTreePageId(String tableId, int pageNo, int pageCategory) {
+        this.tableId = tableId;
+        this.pageNo = pageNo;
+        this.pageCategory = pageCategory;
+    }
+
     @Override
     public String getTableId() {
         return tableId;
