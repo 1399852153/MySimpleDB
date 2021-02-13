@@ -2,6 +2,7 @@ package simpledb.dbpage.btree;
 
 import simpledb.Database;
 import simpledb.dbpage.DBPage;
+import simpledb.dbpage.PageCommonUtil;
 import simpledb.dbpage.PageId;
 import simpledb.dbrecord.Record;
 import simpledb.dbrecord.RecordId;
@@ -177,7 +178,127 @@ public class BTreeInternalPage implements DBPage {
     }
 
     public void insertEntry(BTreeEntry e){
+        // 校验start
+        if (!e.getKey().getType().equals(this.tableDesc.getColumn(this.keyFieldIndex).getColumnTypeEnum())) {
+            throw new DBException("key field type mismatch, in insertEntry");
+        }
+        if(e.getLeftChild().getTableId().equals(this.pageId.getTableId()) || e.getRightChild().getTableId().equals(this.pageId.getTableId())) {
+            throw new DBException("table id mismatch in insertEntry");
+        }
 
+        if(childCategory == BTreePageCategoryEnum.ROOT_PTR.getValue()) {
+            if(e.getLeftChild().getPageCategory() != e.getRightChild().getPageCategory()) {
+                throw new DBException("child page category mismatch in insertEntry");
+            }
+            childCategory = e.getLeftChild().getPageCategory();
+        }else if(e.getLeftChild().getPageCategory() != childCategory || e.getRightChild().getPageCategory() != childCategory) {
+            throw new DBException("child page category mismatch in insertEntry");
+        }
+        // 校验end
+
+        // 整个页的第一条entry插入
+        if(getNotEmptySlotsNum() == 0) {
+            children[0] = e.getLeftChild().getPageNo();
+            children[1] = e.getRightChild().getPageNo();
+            keys[1] = e.getKey();
+            this.bitMapHeaderArray[0] = true;
+            this.bitMapHeaderArray[1] = true;
+            e.setRecordId(new RecordId(this.pageId, 1));
+            return;
+        }
+
+        int firstEmptySlotIndex = PageCommonUtil.getFirstEmptySlotIndex(this.bitMapHeaderArray);
+        int mostRightLessThanTargetIndex = findMostRightIndexLessThanTarget(e);
+
+        // shift entries back or forward to fill empty slot and make room for new entry
+        // while keeping entries in sorted order
+        int goodSlot;
+        if(firstEmptySlotIndex < mostRightLessThanTargetIndex) {
+            for(int i = firstEmptySlotIndex; i < mostRightLessThanTargetIndex; i++) {
+                moveEntry(i+1, i);
+            }
+            goodSlot = mostRightLessThanTargetIndex;
+        }
+        else {
+            for(int i = firstEmptySlotIndex; i > mostRightLessThanTargetIndex + 1; i--) {
+                moveEntry(i-1, i);
+            }
+            goodSlot = mostRightLessThanTargetIndex + 1;
+        }
+
+        // insert new entry into the correct spot in sorted order
+        this.bitMapHeaderArray[goodSlot] = true;
+        keys[goodSlot] = e.getKey();
+        children[goodSlot] = e.getRightChild().getPageNo();
+        e.setRecordId(new RecordId(this.pageId, goodSlot));
+    }
+
+    /**
+     * Move an entry from one slot to another slot, and update the corresponding headers
+     *
+     * from插槽中的数据迁移进to插槽中（修改keys、children和位图header）
+     */
+    private void moveEntry(int from, int to) {
+        if(!this.bitMapHeaderArray[to] && this.bitMapHeaderArray[from]) {
+            this.bitMapHeaderArray[to] = true;
+            this.bitMapHeaderArray[from] = false;
+
+            keys[to] = keys[from];
+            keys[from] = null;
+
+            children[to] = children[from];
+            children[from] = null;
+        }
+    }
+
+    /**
+     * 找到小于或等于参数target的最右下标
+     * todo 还没理解，暂时直接整段的复制过来
+     * */
+    private int findMostRightIndexLessThanTarget(BTreeEntry target){
+        // find the child pointer matching the left or right child in this entry
+        int lessOrEqKey = -1;
+        for (int i=0; i<this.maxSlotNum; i++) {
+            if(this.bitMapHeaderArray[i]) {
+                if(children[i] == target.getLeftChild().getPageNo() || children[i] == target.getRightChild().getPageNo()) {
+                    if(i > 0 && keys[i].compare(OperatorEnum.GREATER_THAN, target.getKey())) {
+                        throw new DBException("attempt to insert invalid entry with left child " +
+                                target.getLeftChild().getPageNo() + ", right child " +
+                                target.getRightChild().getPageNo() + " and key " + target.getKey() +
+                                " HINT: one of these children must match an existing child on the page" +
+                                " and this key must be correctly ordered in between that child's" +
+                                " left and right keys");
+                    }
+                    lessOrEqKey = i;
+                    if(children[i] == target.getRightChild().getPageNo()) {
+                        children[i] = target.getLeftChild().getPageNo();
+                    }
+                }
+                else if(lessOrEqKey != -1) {
+                    // validate that the next key is greater than or equal to the one we are inserting
+                    if(keys[i].compare(OperatorEnum.LESS_THAN, target.getKey())) {
+                        throw new DBException("attempt to insert invalid entry with left child " +
+                                target.getLeftChild().getPageNo() + ", right child " +
+                                target.getRightChild().getPageNo() + " and key " + target.getKey() +
+                                " HINT: one of these children must match an existing child on the page" +
+                                " and this key must be correctly ordered in between that child's" +
+                                " left and right keys");
+                    }
+                    break;
+                }
+            }
+        }
+
+        if(lessOrEqKey == -1) {
+            throw new DBException("attempt to insert invalid entry with left child " +
+                    target.getLeftChild().getPageNo() + ", right child " +
+                    target.getRightChild().getPageNo() + " and key " + target.getKey() +
+                    " HINT: one of these children must match an existing child on the page" +
+                    " and this key must be correctly ordered in between that child's" +
+                    " left and right keys");
+        }
+
+        return lessOrEqKey;
     }
 
     public void updateEntry(BTreeEntry e){

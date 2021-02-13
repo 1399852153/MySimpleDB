@@ -11,6 +11,12 @@ public class BTreePageId implements PageId {
     private final String tableId;
     private final int pageNo;
 
+    /**
+     * 当前页对应的，b树索引类型
+     * @see BTreePageCategoryEnum
+     * */
+    private int pageCategory;
+
     public BTreePageId(String tableId, int pageNo) {
         this.tableId = tableId;
         this.pageNo = pageNo;
@@ -24,6 +30,10 @@ public class BTreePageId implements PageId {
     @Override
     public int getPageNo() {
         return pageNo;
+    }
+
+    public int getPageCategory() {
+        return pageCategory;
     }
 
     @Override
