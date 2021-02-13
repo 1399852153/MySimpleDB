@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  * @author xiongyx
  * @date 2021/2/2
  */
-public class DBHeapPage implements DBPage {
+public class DBHeapPage implements DBPage<Record> {
 
     private final TableDesc tableDesc;
     private final HeapPageId pageId;
@@ -192,13 +192,7 @@ public class DBHeapPage implements DBPage {
 
     @Override
     public int getNotEmptySlotsNum() {
-        int notEmptySlotNum = 0;
-        for (boolean b : this.bitMapHeaderArray) {
-            if (b) {
-                notEmptySlotNum += 1;
-            }
-        }
-        return notEmptySlotNum;
+        return PageCommonUtil.getNotEmptySlotsNum(this.bitMapHeaderArray);
     }
 
     @Override
@@ -233,13 +227,12 @@ public class DBHeapPage implements DBPage {
     private class HeapPageIterator implements Iterator<Record> {
         private final Iterator<Record> iter;
 
-
         public HeapPageIterator(boolean isReverse) {
             ArrayList<Record> noEmptyRecordArrayList = new ArrayList<>();
             for (int i = 0; i < DBHeapPage.this.maxSlotNum; i++) {
                 if (DBHeapPage.this.bitMapHeaderArray[i]) {
                     // 过滤掉为recordList为空的插槽
-                    noEmptyRecordArrayList.add(i, DBHeapPage.this.recordArray[i]);
+                    noEmptyRecordArrayList.add(DBHeapPage.this.recordArray[i]);
                 }
             }
 
@@ -248,11 +241,6 @@ public class DBHeapPage implements DBPage {
             }
 
             iter = noEmptyRecordArrayList.iterator();
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException("TupleIterator: remove not supported");
         }
 
         @Override

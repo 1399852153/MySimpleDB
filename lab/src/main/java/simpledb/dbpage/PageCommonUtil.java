@@ -17,4 +17,14 @@ public class PageCommonUtil {
 
         throw new DBException("can't find a empty slot");
     }
+
+    public static int getNotEmptySlotsNum(boolean[] bitMapHeaderArray){
+        int notEmptySlotNum = 0;
+        for (boolean b : bitMapHeaderArray) {
+            if (b) {
+                notEmptySlotNum += 1;
+            }
+        }
+        return notEmptySlotNum;
+    }
 }

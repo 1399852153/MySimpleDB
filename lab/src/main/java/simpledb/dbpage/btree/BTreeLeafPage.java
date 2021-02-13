@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  *
  * b+树叶子结点
  */
-public class BTreeLeafPage implements DBPage {
+public class BTreeLeafPage implements DBPage<Record> {
 
     private final BTreePageId pageId;
     private final TableDesc tableDesc;
@@ -215,13 +215,7 @@ public class BTreeLeafPage implements DBPage {
 
     @Override
     public int getNotEmptySlotsNum() {
-        int notEmptySlotNum = 0;
-        for (boolean b : this.bitMapHeaderArray) {
-            if (b) {
-                notEmptySlotNum += 1;
-            }
-        }
-        return notEmptySlotNum;
+        return PageCommonUtil.getNotEmptySlotsNum(this.bitMapHeaderArray);
     }
 
     @Override
@@ -342,7 +336,7 @@ public class BTreeLeafPage implements DBPage {
             for (int i = 0; i < BTreeLeafPage.this.maxSlotNum; i++) {
                 if (BTreeLeafPage.this.bitMapHeaderArray[i]) {
                     // 过滤掉为recordList为空的插槽
-                    noEmptyRecordArrayList.add(i, BTreeLeafPage.this.recordArray[i]);
+                    noEmptyRecordArrayList.add(BTreeLeafPage.this.recordArray[i]);
                 }
             }
 
@@ -361,11 +355,6 @@ public class BTreeLeafPage implements DBPage {
         @Override
         public Record next() {
             return this.iter.next();
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
         }
     }
 }

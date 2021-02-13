@@ -17,14 +17,13 @@ import simpledb.matadata.types.ColumnTypeEnum;
 import simpledb.util.CommonUtil;
 
 import java.io.*;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * @author xiongyx
  * @date 2021/2/12
  */
-public class BTreeInternalPage implements DBPage {
+public class BTreeInternalPage implements DBPage<BTreeEntry> {
 
     private final BTreePageId pageId;
     private final TableDesc tableDesc;
@@ -33,10 +32,10 @@ public class BTreeInternalPage implements DBPage {
     private int parent; // parent is always internal node or 0 for root node
 
 
-    private boolean bitMapHeaderArray[];
-    private Field keys[];
-    private Integer children[];
-    private int maxSlotNum;
+    private boolean[] bitMapHeaderArray;
+    private Field[] keys;
+    private Integer[] children;
+    private final int maxSlotNum;
     private int childCategory; // either leaf or internal
 
     public BTreeInternalPage(TableDesc tableDesc,BTreePageId pageId, byte[] data, int keyFieldIndex) {
@@ -147,13 +146,7 @@ public class BTreeInternalPage implements DBPage {
 
     @Override
     public int getNotEmptySlotsNum() {
-        int notEmptySlotNum = 0;
-        for (boolean b : this.bitMapHeaderArray) {
-            if (b) {
-                notEmptySlotNum += 1;
-            }
-        }
-        return notEmptySlotNum;
+        return PageCommonUtil.getNotEmptySlotsNum(this.bitMapHeaderArray);
     }
 
     @Override
@@ -390,13 +383,30 @@ public class BTreeInternalPage implements DBPage {
     }
 
     @Override
-    public Iterator<Record> iterator() {
-        return null;
+    public Iterator<BTreeEntry> iterator() {
+        return new BTreeInternalPageItr(false);
     }
 
     @Override
-    public Iterator<Record> reverseIterator() {
-        return null;
+    public Iterator<BTreeEntry> reverseIterator() {
+        return new BTreeInternalPageItr(true);
+    }
+
+    /**
+     * protected method used by the iterator to get the ith child page id out of this page
+     * @param i - the index of the child page id
+     * @return the ith child page id
+     */
+    private BTreePageId getChildId(int i) throws NoSuchElementException {
+        if (i < 0 || i >= children.length) {
+            throw new NoSuchElementException();
+        }
+
+        if(!this.bitMapHeaderArray[i]) {
+            return null;
+        }else{
+            return new BTreePageId(this.pageId.getTableId(), children[i], childCategory);
+        }
     }
 
     /**
@@ -466,6 +476,88 @@ public class BTreeInternalPage implements DBPage {
             }
         } else {
             dos.writeInt(children[slotIndex]);
+        }
+    }
+
+    /**
+     * 内部迭代器
+     * */
+    private class BTreeInternalPageItr implements Iterator<BTreeEntry>{
+        private final Iterator<Field> keyItr;
+        private final Iterator<Tuple> leftChildItr;
+        private final Iterator<Tuple> rightChildItr;
+
+        public BTreeInternalPageItr(boolean needReverse) {
+            ArrayList<Field> noEmptyKeyList = new ArrayList<>();
+            for (int i = 1; i < BTreeInternalPage.this.maxSlotNum; i++) {
+                if (BTreeInternalPage.this.bitMapHeaderArray[i]) {
+                    // 过滤掉为空的插槽
+                    noEmptyKeyList.add(i, BTreeInternalPage.this.keys[i]);
+                }
+            }
+            if(needReverse) {
+                Collections.reverse(noEmptyKeyList);
+            }
+            keyItr = noEmptyKeyList.iterator();
+
+
+            List<Tuple> noEmptyLeftChildrenList = new ArrayList<>();
+            List<Tuple> noEmptyRightChildrenList = new ArrayList<>();
+            for (int i = 0; i < BTreeInternalPage.this.maxSlotNum-1; i++) {
+                if (BTreeInternalPage.this.bitMapHeaderArray[i]) {
+                    // 过滤掉为空的插槽
+                    noEmptyLeftChildrenList.add(new Tuple(BTreeInternalPage.this.children[i],i));
+                    noEmptyRightChildrenList.add(new Tuple(BTreeInternalPage.this.children[i+1],i+1));
+                }
+            }
+            if(needReverse) {
+                Collections.reverse(noEmptyLeftChildrenList);
+                Collections.reverse(noEmptyRightChildrenList);
+            }
+            this.leftChildItr = noEmptyLeftChildrenList.iterator();
+            this.rightChildItr = noEmptyRightChildrenList.iterator();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return keyItr.hasNext();
+        }
+
+        @Override
+        public BTreeEntry next() {
+            Field nextKey = keyItr.next();
+            Tuple leftChild = leftChildItr.next();
+            BTreePageId leftChildId = new BTreePageId(BTreeInternalPage.this.tableDesc.getTableId(), leftChild.getChildrenKey(), childCategory);
+            Tuple rightChild = rightChildItr.next();
+            BTreePageId rightChildId = new BTreePageId(BTreeInternalPage.this.tableDesc.getTableId(), rightChild.getChildrenKey(), childCategory);
+
+            BTreeEntry nextEntry = new BTreeEntry(nextKey,leftChildId,rightChildId);
+            // value为实际的页内编号
+            nextEntry.setRecordId(new RecordId(BTreeInternalPage.this.pageId,rightChild.getChildIndex()));
+            return nextEntry;
+        }
+
+        private class Tuple implements Comparator<Tuple>{
+            private final Integer childrenKey;
+            private final Integer childIndex;
+
+            public Tuple(Integer childrenKey, Integer childIndex) {
+                this.childrenKey = childrenKey;
+                this.childIndex = childIndex;
+            }
+
+            public Integer getChildrenKey() {
+                return childrenKey;
+            }
+
+            public Integer getChildIndex() {
+                return childIndex;
+            }
+
+            @Override
+            public int compare(Tuple o1, Tuple o2) {
+                return o1.childIndex.compareTo(o2.childIndex);
+            }
         }
     }
 }

@@ -9,13 +9,13 @@ import java.util.Iterator;
  * @author xiongyx
  * @date 2021/2/5
  */
-public interface DBPage {
+public interface DBPage<T> {
 
     byte[] serialize() throws IOException;
     int getNotEmptySlotsNum();
     int getMaxSlotNum();
     PageId getPageId();
-    Iterator<Record> iterator();
-    Iterator<Record> reverseIterator();
+    Iterator<T> iterator();
+    Iterator<T> reverseIterator();
 }
 
