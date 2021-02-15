@@ -2,6 +2,8 @@ package simpledb.dbpage.btree;
 
 import simpledb.dbpage.PageId;
 
+import java.util.Objects;
+
 /**
  * @author xiongyx
  * @date 2021/2/11
@@ -40,6 +42,19 @@ public class BTreePageId implements PageId {
 
     public int getPageCategory() {
         return pageCategory;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BTreePageId that = (BTreePageId) o;
+        return pageNo == that.pageNo && pageCategory == that.pageCategory && Objects.equals(tableId, that.tableId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(tableId, pageNo, pageCategory);
     }
 
     @Override

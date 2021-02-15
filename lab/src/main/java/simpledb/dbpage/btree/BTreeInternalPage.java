@@ -23,7 +23,6 @@ import java.util.*;
  */
 public class BTreeInternalPage extends BTreePage {
 
-    private final BTreePageId pageId;
     private final int keyFieldIndex;
 
     private boolean[] bitMapHeaderArray;
@@ -33,8 +32,7 @@ public class BTreeInternalPage extends BTreePage {
     private int childCategory; // either leaf or internal
 
     public BTreeInternalPage(TableDesc tableDesc,BTreePageId pageId, byte[] data, int keyFieldIndex) {
-        super(tableDesc);
-        this.pageId = pageId;
+        super(tableDesc,pageId);
         this.keyFieldIndex = keyFieldIndex;
         this.maxSlotNum = getMaxSlotNum();
 
@@ -161,10 +159,6 @@ public class BTreeInternalPage extends BTreePage {
 
     @Override
     public PageId getPageId() {
-        return this.pageId;
-    }
-
-    public BTreePageId getBTreePageId(){
         return this.pageId;
     }
 

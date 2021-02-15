@@ -7,6 +7,7 @@ import simpledb.iterator.DbFileIterator;
 import simpledb.matadata.table.TableDesc;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +22,7 @@ public interface DBFile {
     DBPage readPage(PageId pageId);
     void writePage(DBPage dbPage);
 
-    List<DBPage> insertTuple(Record newRecord);
+    List<DBPage> insertTuple(Record newRecord) throws IOException;
     List<DBPage> deleteTuple(Record recordNeedDelete);
 
     DbFileIterator<Record> getIterator();

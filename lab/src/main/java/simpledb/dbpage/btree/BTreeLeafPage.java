@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
  */
 public class BTreeLeafPage extends BTreePage {
 
-    private final BTreePageId pageId;
     private final int keyFieldIndex;
 
     /**
@@ -56,8 +55,7 @@ public class BTreeLeafPage extends BTreePage {
     private int rightSibling;
 
     public BTreeLeafPage(TableDesc tableDesc, BTreePageId pageId, byte[] data, int keyFieldIndex) {
-        super(tableDesc);
-        this.pageId = pageId;
+        super(tableDesc,pageId);
         this.keyFieldIndex = keyFieldIndex;
         this.maxSlotNum = this.getMaxSlotNum();
 
@@ -228,10 +226,6 @@ public class BTreeLeafPage extends BTreePage {
 
     @Override
     public PageId getPageId() {
-        return this.pageId;
-    }
-
-    public BTreePageId getBTreePageId(){
         return this.pageId;
     }
 

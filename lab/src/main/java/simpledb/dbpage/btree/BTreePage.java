@@ -11,10 +11,12 @@ import simpledb.matadata.table.TableDesc;
 public abstract class BTreePage implements DBPage {
 
     protected final TableDesc tableDesc;
+    protected final BTreePageId pageId;
     protected int parent; // parent is always internal node or 0 for root node
 
-    public BTreePage(TableDesc tableDesc) {
+    public BTreePage(TableDesc tableDesc,BTreePageId pageId) {
         this.tableDesc = tableDesc;
+        this.pageId = pageId;
     }
 
     public BTreePageId getParentId() {
@@ -23,6 +25,10 @@ public abstract class BTreePage implements DBPage {
         }else{
             return new BTreePageId(this.tableDesc.getTableId(), parent, BTreePageCategoryEnum.INTERNAL.getValue());
         }
+    }
+
+    public BTreePageId getBTreePageId(){
+        return this.pageId;
     }
 
     /**
