@@ -111,4 +111,11 @@ public class BTreeRootPtrPage implements DBPage {
         }
     }
 
+    public static byte[] createEmptyPageData() {
+        return new byte[ROOT_PTR_PAGE_SIZE]; //all 0
+    }
+
+    public static BTreePageId getId(String tableid) {
+        return new BTreePageId(tableid, 0, BTreePageCategoryEnum.ROOT_PTR.getValue());
+    }
 }

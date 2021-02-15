@@ -23,7 +23,7 @@ import java.util.*;
  * @author xiongyx
  * @date 2021/2/12
  */
-public class BTreeInternalPage implements DBPage<BTreeEntry> {
+public class BTreeInternalPage implements DBPage {
 
     private final BTreePageId pageId;
     private final TableDesc tableDesc;

@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  * @author xiongyx
  * @date 2021/2/2
  */
-public class DBHeapPage implements DBPage<Record> {
+public class DBHeapPage implements DBPage {
 
     private final TableDesc tableDesc;
     private final HeapPageId pageId;

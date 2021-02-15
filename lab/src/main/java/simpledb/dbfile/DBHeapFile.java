@@ -161,7 +161,7 @@ public class DBHeapFile implements DBFile{
         }
 
         private Iterator<Record> getNewPageIterator(int pgNo) {
-            HeapPageId pid = new HeapPageId(tableId, pgNo);
+            PageId pid = new HeapPageId(tableId, pgNo);
             return Database
                     .getBufferPool()
                     .getPage(pid).iterator();

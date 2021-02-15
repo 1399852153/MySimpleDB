@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  *
  * b+树叶子结点
  */
-public class BTreeLeafPage implements DBPage<Record> {
+public class BTreeLeafPage implements DBPage {
 
     private final BTreePageId pageId;
     private final TableDesc tableDesc;
@@ -242,6 +242,10 @@ public class BTreeLeafPage implements DBPage<Record> {
     @Override
     public Iterator<Record> reverseIterator() {
         return new BTreeLeafPageItr(true);
+    }
+
+    public static byte[] createEmptyPageData() {
+        return new byte[Database.getBufferPool().getPageSize()]; //all 0
     }
 
     private Record readNextRecord(DataInputStream dis, int slotIndex) {
