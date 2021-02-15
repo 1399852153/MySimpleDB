@@ -1,7 +1,5 @@
 package simpledb.dbpage;
 
-import simpledb.dbrecord.Record;
-
 import java.io.IOException;
 import java.util.Iterator;
 

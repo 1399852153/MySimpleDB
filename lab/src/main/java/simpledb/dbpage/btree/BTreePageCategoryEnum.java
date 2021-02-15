@@ -11,8 +11,8 @@ public enum BTreePageCategoryEnum {
     HEADER(3,"头结点页"),
     ;
 
-    private int value;
-    private String message;
+    private final int value;
+    private final String message;
 
     BTreePageCategoryEnum(int value, String message) {
         this.value = value;
