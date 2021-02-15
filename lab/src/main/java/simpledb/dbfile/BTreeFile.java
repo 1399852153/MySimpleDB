@@ -13,8 +13,9 @@ import simpledb.matadata.fields.Field;
 import simpledb.matadata.table.TableDesc;
 
 import java.io.*;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * @author xiongyx
@@ -137,6 +138,16 @@ public class BTreeFile implements DBFile{
         } catch (IOException e) {
             throw new DBException("write BTreeFile page error",e);
         }
+    }
+
+    @Override
+    public List<DBPage> insertTuple(Record newRecord) {
+        return null;
+    }
+
+    @Override
+    public List<DBPage> deleteTuple(Record recordNeedDelete) {
+        return null;
     }
 
 

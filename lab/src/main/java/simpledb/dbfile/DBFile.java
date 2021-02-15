@@ -7,6 +7,8 @@ import simpledb.iterator.DbFileIterator;
 import simpledb.matadata.table.TableDesc;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author xiongyx
@@ -18,5 +20,9 @@ public interface DBFile {
     File getDbFile();
     DBPage readPage(PageId pageId);
     void writePage(DBPage dbPage);
+
+    List<DBPage> insertTuple(Record newRecord);
+    List<DBPage> deleteTuple(Record recordNeedDelete);
+
     DbFileIterator<Record> getIterator();
 }

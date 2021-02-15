@@ -1,6 +1,7 @@
 package simpledb.dbfile;
 
 import simpledb.Database;
+import simpledb.dbpage.PageCommonUtil;
 import simpledb.dbpage.normal.DBHeapPage;
 import simpledb.dbpage.DBPage;
 import simpledb.dbpage.normal.HeapPageId;
@@ -14,8 +15,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * @author xiongyx
@@ -84,6 +84,48 @@ public class DBHeapFile implements DBFile{
         }
     }
 
+    @Override
+    public List<DBPage> insertTuple(Record newRecord) {
+        int numPages = getCurrentPageNum();
+
+        // 先从已存在的页中尝试着找到一个空闲插槽
+        for (int pgNo = 0; pgNo < numPages; pgNo++) {
+            HeapPageId heapPageId = new HeapPageId(this.tableDesc.getTableId(), pgNo);
+            // 找到目标页
+            DBHeapPage targetPage = (DBHeapPage) Database.getBufferPool().getPage(heapPageId);
+
+            // 存在空插槽
+            if (targetPage.getMaxSlotNum() > targetPage.getNotEmptySlotsNum()) {
+                // insert will update tuple when inserted
+                targetPage.insertRecord(newRecord);
+
+                return Collections.singletonList(targetPage);
+            }
+        }
+
+        // 已经遍历了所有已存在的页，但没有找到空闲的插槽可用，必须创建一个新的页来承载插入的Record
+        HeapPageId heapPageId = new HeapPageId(this.tableDesc.getTableId(), numPages);
+        DBHeapPage newPage = new DBHeapPage(this.tableDesc,heapPageId, PageCommonUtil.createEmptyPageData());
+        newPage.insertRecord(newRecord);
+        writePage(newPage);
+
+        return Collections.singletonList(newPage);
+    }
+
+    @Override
+    public List<DBPage> deleteTuple(Record recordNeedDelete) {
+        if(!this.tableDesc.getTableId().equals(recordNeedDelete.getTableDesc().getTableId())){
+            throw new DBException("HeapFile: deleteTuple: tuple.tableid != getId");
+        }
+
+        PageId pageId = recordNeedDelete.getRecordId().getPageId();
+        // 找到对应的页
+        DBHeapPage targetHeapPage = (DBHeapPage) Database.getBufferPool().getPage(pageId);
+        targetHeapPage.deleteRecord(recordNeedDelete);
+
+        return Collections.singletonList(targetHeapPage);
+    }
+
     /**
      * 获得文件的迭代器
      * */
@@ -95,7 +137,7 @@ public class DBHeapFile implements DBFile{
     /**
      * 当前文件存在多少页
      */
-    private int getPageNum() {
+    private int getCurrentPageNum() {
         return (int) dbFile.length() / Database.getBufferPool().getPageSize();
     }
 
@@ -112,7 +154,7 @@ public class DBHeapFile implements DBFile{
             this.pgCursor = null;
             this.pageIterator = null;
             this.tableId = tableId;
-            this.numPages = getPageNum();
+            this.numPages = getCurrentPageNum();
         }
 
         @Override
