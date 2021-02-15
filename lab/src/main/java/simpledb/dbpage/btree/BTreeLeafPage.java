@@ -234,6 +234,10 @@ public class BTreeLeafPage implements DBPage {
         return this.pageId;
     }
 
+    public BTreePageId getBTreePageId(){
+        return this.pageId;
+    }
+
     @Override
     public Iterator<Record> iterator() {
         return new BTreeLeafPageItr(false);
@@ -244,7 +248,80 @@ public class BTreeLeafPage implements DBPage {
         return new BTreeLeafPageItr(true);
     }
 
+    public BTreePageId getParentId() {
+        if(parent == 0) {
+            return BTreeRootPtrPage.getId(this.tableDesc.getTableId());
+        }else{
+            return new BTreePageId(this.tableDesc.getTableId(), parent, BTreePageCategoryEnum.INTERNAL.getValue());
+        }
+    }
 
+    /**
+     * Set the parent id
+     * @param id - the id of the parent of this page
+     */
+    public void setParentId(BTreePageId id){
+        if(id == null) {
+            throw new DBException("parent id must not be null");
+        }
+        if(!id.getTableId().equals(this.tableDesc.getTableId())) {
+            throw new DBException("table id mismatch in setParentId");
+        }
+        if(id.getPageCategory() != BTreePageCategoryEnum.INTERNAL.getValue()
+                && id.getPageCategory() != BTreePageCategoryEnum.ROOT_PTR.getValue()) {
+            throw new DBException("parent must be an internal node or root pointer");
+        }
+        if(id.getPageCategory() == BTreePageCategoryEnum.ROOT_PTR.getValue()) {
+            parent = 0;
+        }
+        else {
+            parent = id.getPageNo();
+        }
+    }
+
+    public BTreePageId getLeftSiblingId() {
+        if(leftSibling == 0) {
+            return null;
+        }
+        return new BTreePageId(this.tableDesc.getTableId(), leftSibling, BTreePageCategoryEnum.LEAF.getValue());
+    }
+
+    public void setLeftSiblingId(BTreePageId id){
+        if(id == null) {
+            leftSibling = 0;
+        }
+        else {
+            if(!id.getTableId().equals(this.tableDesc.getTableId())) {
+                throw new DBException("table id mismatch in setLeftSiblingId");
+            }
+            if(id.getPageCategory() != BTreePageCategoryEnum.LEAF.getValue()) {
+                throw new DBException("leftSibling must be a leaf node");
+            }
+            leftSibling = id.getPageCategory();
+        }
+    }
+
+    public BTreePageId getRightSiblingId() {
+        if(rightSibling == 0) {
+            return null;
+        }
+        return new BTreePageId(this.tableDesc.getTableId(), rightSibling, BTreePageCategoryEnum.LEAF.getValue());
+    }
+
+    public void setRightSiblingId(BTreePageId id){
+        if(id == null) {
+            rightSibling = 0;
+        }
+        else {
+            if(!id.getTableId().equals(this.tableDesc.getTableId())) {
+                throw new DBException("table id mismatch in setRightSiblingId");
+            }
+            if(id.getPageCategory() != BTreePageCategoryEnum.LEAF.getValue()) {
+                throw new DBException("rightSibling must be a leaf node");
+            }
+            rightSibling = id.getPageNo();
+        }
+    }
 
     private Record readNextRecord(DataInputStream dis, int slotIndex) {
         if (!this.bitMapHeaderArray[slotIndex]) {

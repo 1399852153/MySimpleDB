@@ -93,6 +93,24 @@ public class BTreeRootPtrPage implements DBPage {
     }
 
     /**
+     * Set the id of the root page in this B+ tree
+     * @param bTreePageId - the id of the root page
+     */
+    public void setRootId(BTreePageId bTreePageId) {
+        if(bTreePageId == null) {
+            root = 0;
+        }
+        else {
+            if(bTreePageId.getPageCategory() != BTreePageCategoryEnum.INTERNAL.getValue()
+                    && bTreePageId.getPageCategory() != BTreePageCategoryEnum.LEAF.getValue()) {
+                throw new DBException("root must be an internal node or leaf node bTreePageId:" + bTreePageId);
+            }
+            root = bTreePageId.getPageNo();
+            rootCategory = bTreePageId.getPageCategory();
+        }
+    }
+
+    /**
      * Get the id of the first header page, or null if none exists
      * @return the id of the first header page
      */

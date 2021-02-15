@@ -170,6 +170,10 @@ public class BTreeInternalPage implements DBPage {
         return this.pageId;
     }
 
+    public BTreePageId getBTreePageId(){
+        return this.pageId;
+    }
+
     public void insertEntry(BTreeEntry e){
         // 校验start
         if (!e.getKey().getType().equals(this.tableDesc.getColumn(this.keyFieldIndex).getColumnTypeEnum())) {

@@ -13,6 +13,7 @@ import simpledb.matadata.fields.Field;
 import simpledb.matadata.table.TableDesc;
 
 import java.io.*;
+import java.util.HashMap;
 import java.util.Iterator;
 
 /**
@@ -203,10 +204,85 @@ public class BTreeFile implements DBFile{
     }
 
     /**
-     * 拆分叶子节点
+     * 拆分叶子节点页
+     * @return 返回的是拆分后，field最终被插入的那个叶子页
      * */
-    public BTreeLeafPage splitLeafPage(BTreeLeafPage page, Field field){
-        return null;
+    public BTreeLeafPage splitLeafPage(BTreeLeafPage page, Field field) throws IOException {
+        // 拆分叶子结点平摊所存储的数据，先创建一个右兄弟页
+        BTreeLeafPage newRightSib = (BTreeLeafPage) getEmptyPage(BTreePageCategoryEnum.LEAF);
+
+        // 将需要从原来页面拆分出来的记录暂时收集到tupleToMove中
+        Iterator<Record> it = page.reverseIterator();
+        Record[] tupleToMove = new Record[(page.getNotEmptySlotsNum()+1) / 2];
+        int moveCnt = tupleToMove.length - 1;
+        while (moveCnt >= 0 && it.hasNext()) {
+            tupleToMove[moveCnt--] = it.next();
+        }
+        // 从原页面中删除，在新页面中插入
+        for (int i = tupleToMove.length-1; i >= 0; --i) {
+            page.deleteRecord(tupleToMove[i]);
+            newRightSib.insertRecord(tupleToMove[i]);
+        }
+
+        // 被拆分出来的新叶子页面，其最小的记录作为key（新页面是右节点）
+        Field midKey = tupleToMove[0].getField(this.keyFieldIndex);
+        // 获得被拆分叶子节点的双亲节点
+        BTreeInternalPage parent = getParentWithEmptySlots(page, midKey);
+
+        BTreePageId oldRightSibId = page.getRightSiblingId();
+        // 新创建的newRightSib位于被拆分页面page和page之前的oldRightSibId之间（page<=>newRightSib<=>oldRightSibId）
+        newRightSib.setRightSiblingId(oldRightSibId);
+        newRightSib.setLeftSiblingId(page.getBTreePageId());
+        page.setRightSiblingId(newRightSib.getBTreePageId());
+        if (oldRightSibId != null) {
+            BTreeLeafPage oldRightSib = (BTreeLeafPage) getPage(page.getRightSiblingId());
+            oldRightSib.setLeftSiblingId(newRightSib.getBTreePageId());
+        }
+        // 设置两者共同的双亲
+        newRightSib.setParentId(parent.getBTreePageId());
+        page.setParentId(parent.getBTreePageId());
+
+        // 拆分后，parent双亲页中插入新的一条BTreeEntry
+        BTreeEntry newParentEntry = new BTreeEntry(midKey, page.getBTreePageId(), newRightSib.getBTreePageId());
+        parent.insertEntry(newParentEntry);
+
+        // 返回的是拆分后，field最终被插入的那个叶子页
+        if (field.compare(OperatorEnum.GREATER_THAN, midKey)) {
+            // field>midKey,field被插入在newRightSib页中
+            return newRightSib;
+        } else {
+            // field<=midKey,field被插入在page页中
+            return page;
+        }
+    }
+
+    /**
+     * 获得对应叶子页的双亲页（确保返回的双亲页必定存在空插槽，否则函数内部会对当前的双亲节点进行拆分）
+     * */
+    private BTreeInternalPage getParentWithEmptySlots(BTreeLeafPage bTreeLeafPage, Field field) throws IOException {
+        BTreePageId parentPageId = bTreeLeafPage.getParentId();
+
+        if(parentPageId.getPageCategory() == BTreePageCategoryEnum.ROOT_PTR.getValue()){
+            // 如果对应的双亲页就是根指针页，则创建一个空的Internal内部页作为其双亲页(此时的B+树还很小)
+            BTreeInternalPage newParent = (BTreeInternalPage) getEmptyPage(BTreePageCategoryEnum.INTERNAL);
+
+            // 更新根节点指针，令根节点指针指向新创建出的Internal内部页
+            BTreeRootPtrPage rootPtr = (BTreeRootPtrPage) getPage(BTreeRootPtrPage.getId(this.tableId));
+            rootPtr.setRootId((BTreePageId) newParent.getPageId());
+
+            return newParent;
+        }else{
+            BTreeInternalPage parent = (BTreeInternalPage) getPage(parentPageId);
+
+            // split the parent if needed
+            if(parent.getNotEmptySlotsNum() == parent.getNotEmptySlotsNum()) {
+                // todo 当前双亲节点已经没有空插槽了，将双亲节点进行拆分
+//                parent = splitInternalPage(parent, field);
+            }
+
+            // 返回双亲节点，且其一定存在空插槽
+            return parent;
+        }
     }
 
     private DBPage getEmptyPage(BTreePageCategoryEnum pageCategoryEnum) throws IOException {
@@ -217,7 +293,8 @@ public class BTreeFile implements DBFile{
         // write empty page to disk
         RandomAccessFile rf = new RandomAccessFile(f, "rw");
 
-        rf.seek(BTreeRootPtrPage.ROOT_PTR_PAGE_SIZE + (emptyPageNo-1) * Database.getBufferPool().getPageSize());
+        int needSkip = BTreeRootPtrPage.ROOT_PTR_PAGE_SIZE + (emptyPageNo-1) * Database.getBufferPool().getPageSize();
+        rf.seek(needSkip);
         rf.write(PageCommonUtil.createEmptyPageData());
         rf.close();
 
