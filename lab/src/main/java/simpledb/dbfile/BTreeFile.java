@@ -420,7 +420,7 @@ public class BTreeFile implements DBFile{
                 // mergeLeafPages(tid, dirtypages, leftSibling, page, parent, leftEntry);
             }else{
                 // leftSiblingPage左兄弟页的空插槽数高于阈值，从左兄弟页迁移一些数据到targetBTreeLeafPage，分摊数据
-                // stealFromLeafPage(page, leftSibling, parent, leftEntry, false);
+                 stealFromLeafPage(targetBTreeLeafPage, leftSiblingPage, parent, leftEntry, false);
             }
 
         } else if(rightSiblingId != null){
@@ -431,8 +431,50 @@ public class BTreeFile implements DBFile{
                 // mergeLeafPages(tid, dirtypages, page, rightSibling, parent, rightEntry);
             }else{
                 // rightSiblingPage右兄弟页的空插槽数高于阈值，从右兄弟页迁移一些数据到targetBTreeLeafPage，分摊数据
-                // stealFromLeafPage(page, rightSibling, parent, rightEntry, true);
+                 stealFromLeafPage(targetBTreeLeafPage, rightSiblingPage, parent, rightEntry, true);
             }
+        }
+    }
+
+    /**
+     * 从兄弟节点中迁移数据，进行平摊
+     * */
+    public void stealFromLeafPage(BTreeLeafPage targetLeafPage, BTreeLeafPage sibling, BTreeInternalPage parent, BTreeEntry entry, boolean isRightSibling){
+        // 计算一共需要搬运的记录数量
+        int numTupleToMove = (sibling.getNotEmptySlotsNum() - targetLeafPage.getNotEmptySlotsNum()) / 2;
+
+        Iterator<Record> it;
+        if (isRightSibling) {
+            // 用兄弟使用正向迭代器，搬运位于页起始的数据
+            it = sibling.iterator();
+        } else {
+            // 左兄弟使用反向迭代器，搬运位于页末尾的数据
+            it = sibling.reverseIterator();
+        }
+
+        Record[] recordsToMove = new Record[numTupleToMove];
+        int cntDown = recordsToMove.length - 1;
+        while (cntDown >= 0 && it.hasNext()) {
+            // 需要搬运的数据先收集到recordsToMove中
+            recordsToMove[cntDown--] = it.next();
+        }
+
+        for (Record movedItem : recordsToMove) {
+            // 一边删除一边插入进行搬运
+            sibling.deleteRecord(movedItem);
+            targetLeafPage.insertRecord(movedItem);
+        }
+
+        BTreeLeafPage rightHeadPage;
+        if (isRightSibling) {
+            rightHeadPage = sibling;
+        } else {
+            rightHeadPage = targetLeafPage;
+        }
+        if (rightHeadPage.getNotEmptySlotsNum() > 0) {
+            // 靠右手边的页面保存数据的第0位的值，作为双亲Entry的key
+            entry.setKey(rightHeadPage.iterator().next().getField(this.keyFieldIndex));
+            parent.updateEntry(entry);
         }
     }
 
