@@ -25,13 +25,10 @@ import java.util.stream.Collectors;
  *
  * b+树叶子结点
  */
-public class BTreeLeafPage implements DBPage {
+public class BTreeLeafPage extends BTreePage {
 
     private final BTreePageId pageId;
-    private final TableDesc tableDesc;
     private final int keyFieldIndex;
-
-    private int parent; // parent is always internal node or 0 for root node
 
     /**
      * 头部位图
@@ -59,7 +56,7 @@ public class BTreeLeafPage implements DBPage {
     private int rightSibling;
 
     public BTreeLeafPage(TableDesc tableDesc, BTreePageId pageId, byte[] data, int keyFieldIndex) {
-        this.tableDesc = tableDesc;
+        super(tableDesc);
         this.pageId = pageId;
         this.keyFieldIndex = keyFieldIndex;
         this.maxSlotNum = this.getMaxSlotNum();
@@ -248,36 +245,6 @@ public class BTreeLeafPage implements DBPage {
         return new BTreeLeafPageItr(true);
     }
 
-    public BTreePageId getParentId() {
-        if(parent == 0) {
-            return BTreeRootPtrPage.getId(this.tableDesc.getTableId());
-        }else{
-            return new BTreePageId(this.tableDesc.getTableId(), parent, BTreePageCategoryEnum.INTERNAL.getValue());
-        }
-    }
-
-    /**
-     * Set the parent id
-     * @param id - the id of the parent of this page
-     */
-    public void setParentId(BTreePageId id){
-        if(id == null) {
-            throw new DBException("parent id must not be null");
-        }
-        if(!id.getTableId().equals(this.tableDesc.getTableId())) {
-            throw new DBException("table id mismatch in setParentId");
-        }
-        if(id.getPageCategory() != BTreePageCategoryEnum.INTERNAL.getValue()
-                && id.getPageCategory() != BTreePageCategoryEnum.ROOT_PTR.getValue()) {
-            throw new DBException("parent must be an internal node or root pointer");
-        }
-        if(id.getPageCategory() == BTreePageCategoryEnum.ROOT_PTR.getValue()) {
-            parent = 0;
-        }
-        else {
-            parent = id.getPageNo();
-        }
-    }
 
     public BTreePageId getLeftSiblingId() {
         if(leftSibling == 0) {

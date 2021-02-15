@@ -1,10 +1,8 @@
 package simpledb.dbpage.btree;
 
 import simpledb.Database;
-import simpledb.dbpage.DBPage;
 import simpledb.dbpage.PageCommonUtil;
 import simpledb.dbpage.PageId;
-import simpledb.dbrecord.Record;
 import simpledb.dbrecord.RecordId;
 import simpledb.exception.DBException;
 import simpledb.exception.ParseException;
@@ -23,14 +21,10 @@ import java.util.*;
  * @author xiongyx
  * @date 2021/2/12
  */
-public class BTreeInternalPage implements DBPage {
+public class BTreeInternalPage extends BTreePage {
 
     private final BTreePageId pageId;
-    private final TableDesc tableDesc;
     private final int keyFieldIndex;
-
-    private int parent; // parent is always internal node or 0 for root node
-
 
     private boolean[] bitMapHeaderArray;
     private Field[] keys;
@@ -39,7 +33,7 @@ public class BTreeInternalPage implements DBPage {
     private int childCategory; // either leaf or internal
 
     public BTreeInternalPage(TableDesc tableDesc,BTreePageId pageId, byte[] data, int keyFieldIndex) {
-        this.tableDesc = tableDesc;
+        super(tableDesc);
         this.pageId = pageId;
         this.keyFieldIndex = keyFieldIndex;
         this.maxSlotNum = getMaxSlotNum();

@@ -205,28 +205,28 @@ public class BTreeFile implements DBFile{
 
     /**
      * 拆分叶子节点页
-     * @return 返回的是拆分后，field最终被插入的那个叶子页
+     * @return 返回拆分后，field最终被插入的那个叶子页
      * */
     public BTreeLeafPage splitLeafPage(BTreeLeafPage page, Field field) throws IOException {
-        // 拆分叶子结点平摊所存储的数据，先创建一个右兄弟页
+        // 拆分叶子结点页平摊所存储的数据，先创建一个右兄弟页
         BTreeLeafPage newRightSib = (BTreeLeafPage) getEmptyPage(BTreePageCategoryEnum.LEAF);
 
-        // 将需要从原来页面拆分出来的记录暂时收集到tupleToMove中
+        // 将需要从原来页面拆分出来的记录暂时收集到recordToMove中
         Iterator<Record> it = page.reverseIterator();
-        Record[] tupleToMove = new Record[(page.getNotEmptySlotsNum()+1) / 2];
-        int moveCnt = tupleToMove.length - 1;
+        Record[] recordToMove = new Record[(page.getNotEmptySlotsNum()+1) / 2];
+        int moveCnt = recordToMove.length - 1;
         while (moveCnt >= 0 && it.hasNext()) {
-            tupleToMove[moveCnt--] = it.next();
+            recordToMove[moveCnt--] = it.next();
         }
         // 从原页面中删除，在新页面中插入
-        for (int i = tupleToMove.length-1; i >= 0; --i) {
-            page.deleteRecord(tupleToMove[i]);
-            newRightSib.insertRecord(tupleToMove[i]);
+        for (int i = recordToMove.length-1; i >= 0; --i) {
+            page.deleteRecord(recordToMove[i]);
+            newRightSib.insertRecord(recordToMove[i]);
         }
 
         // 被拆分出来的新叶子页面，其最小的记录作为key（新页面是右节点）
-        Field midKey = tupleToMove[0].getField(this.keyFieldIndex);
-        // 获得被拆分叶子节点的双亲节点
+        Field midKey = recordToMove[0].getField(this.keyFieldIndex);
+        // 获得被拆分叶子节点页的双亲页
         BTreeInternalPage parent = getParentWithEmptySlots(page, midKey);
 
         BTreePageId oldRightSibId = page.getRightSiblingId();
@@ -257,10 +257,75 @@ public class BTreeFile implements DBFile{
     }
 
     /**
-     * 获得对应叶子页的双亲页（确保返回的双亲页必定存在空插槽，否则函数内部会对当前的双亲节点进行拆分）
+     * 拆分内部节点页
+     * @return 返回拆分后，field最终被插入的那个内部节点页
      * */
-    private BTreeInternalPage getParentWithEmptySlots(BTreeLeafPage bTreeLeafPage, Field field) throws IOException {
-        BTreePageId parentPageId = bTreeLeafPage.getParentId();
+    public BTreeInternalPage splitInternalPage(BTreeInternalPage page, Field field) throws IOException {
+        // 拆分内部结点页平摊所存储的数据，先创建一个右兄弟页
+        BTreeInternalPage newRightSib = (BTreeInternalPage) getEmptyPage(BTreePageCategoryEnum.INTERNAL);
+
+        // 将需要从原来页面拆分出来的记录暂时收集到entryToMove中
+        Iterator<BTreeEntry> it = page.reverseIterator();
+        BTreeEntry[] entryToMove = new BTreeEntry[(page.getNotEmptySlotsNum()+1) / 2];
+        int moveCnt = entryToMove.length - 1;
+        while (moveCnt >= 0 && it.hasNext()) {
+            entryToMove[moveCnt--] = it.next();
+        }
+
+        // 从原页面中删除，在新页面中插入
+        for (int i = entryToMove.length-1; i >= 0; --i) {
+            if(i == 0){
+                // internal页面的第0项entry比较特殊，newRightSib不需要插入
+                page.deleteKeyAndRightChild(entryToMove[0]);
+            }else{
+                page.deleteKeyAndRightChild(entryToMove[i]);
+                newRightSib.insertEntry(entryToMove[i]);
+            }
+            // 更新每一个被迁移的右孩子的parent，令newRightSib为新的parent
+            updateParentPointer(newRightSib.getBTreePageId(), entryToMove[i].getRightChild());
+        }
+
+        // 被拆分出来的新叶子页面，其最小的记录作为key（新页面是右节点）
+        BTreeEntry midKey = entryToMove[0];
+        // midKey设置左右孩子
+        midKey.setLeftChild(page.getBTreePageId());
+        midKey.setRightChild(newRightSib.getBTreePageId());
+
+        // 拆分后，parent双亲页中插入新的一条BTreeEntry
+        BTreeInternalPage parent = getParentWithEmptySlots(page, midKey.getKey());
+        parent.insertEntry(midKey);
+
+        // 设置被拆分的两个内部节点页的双亲
+        page.setParentId(parent.getBTreePageId());
+        newRightSib.setParentId(parent.getBTreePageId());
+
+        // 返回的是拆分后，field最终被插入的那个内部节点页
+        if (field.compare(OperatorEnum.GREATER_THAN, midKey.getKey())) {
+            // field>midKey,field被插入在newRightSib页中
+            return newRightSib;
+        } else {
+            // field<=midKey,field被插入在page页中
+            return page;
+        }
+    }
+
+    private void updateParentPointer(BTreePageId pid, BTreePageId child){
+        // 先以只读的权限，查询出child对应的页
+        BTreePage p = (BTreePage)getPage(child);
+
+        if(!p.getParentId().equals(pid)) {
+            // 如果child对应的页和参数pid不一致，将其parentId设置为pid
+            p = (BTreePage) getPage(child);
+            p.setParentId(pid);
+        }
+    }
+
+    /**
+     * 获得对应页的双亲页（确保返回的双亲页必定存在空插槽，否则函数内部会对当前的双亲节点进行拆分）
+     * 注意：内部节点的拆分是可能递归，极端情况下可能从最下层蔓延至根节点
+     * */
+    private BTreeInternalPage getParentWithEmptySlots(BTreePage bTreePage, Field field) throws IOException {
+        BTreePageId parentPageId = bTreePage.getParentId();
 
         if(parentPageId.getPageCategory() == BTreePageCategoryEnum.ROOT_PTR.getValue()){
             // 如果对应的双亲页就是根指针页，则创建一个空的Internal内部页作为其双亲页(此时的B+树还很小)
@@ -276,8 +341,8 @@ public class BTreeFile implements DBFile{
 
             // split the parent if needed
             if(parent.getNotEmptySlotsNum() == parent.getNotEmptySlotsNum()) {
-                // todo 当前双亲节点已经没有空插槽了，将双亲节点进行拆分
-//                parent = splitInternalPage(parent, field);
+                // 当前双亲节点已经没有空插槽了，将双亲节点进行拆分
+                parent = splitInternalPage(parent, field);
             }
 
             // 返回双亲节点，且其一定存在空插槽
