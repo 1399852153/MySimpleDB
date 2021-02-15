@@ -200,7 +200,7 @@ public class BTreeInternalPage implements DBPage {
             return;
         }
 
-        int firstEmptySlotIndex = PageCommonUtil.getFirstEmptySlotIndex(this.bitMapHeaderArray);
+        int firstEmptySlotIndex = PageCommonUtil.getFirstEmptySlotIndex(this.bitMapHeaderArray,true);
         int mostRightLessThanTargetIndex = findMostRightIndexLessThanTarget(e);
 
         // shift entries back or forward to fill empty slot and make room for new entry

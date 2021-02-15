@@ -1,5 +1,7 @@
 package simpledb;
 
+import simpledb.dbpage.PageId;
+
 /**
  * @author xiongyx
  * @date 2021/2/4
@@ -22,6 +24,5 @@ public class Database {
     public static BufferPool getBufferPool() {
         return bufferPool;
     }
-
 
 }

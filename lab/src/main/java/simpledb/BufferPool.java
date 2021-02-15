@@ -23,7 +23,6 @@ public class BufferPool {
         this.maxPageSize = maxPageSize;
     }
 
-
     public int getPageSize(){
         return DEFAULT_PAGE_SIZE;
     }
@@ -45,5 +44,9 @@ public class BufferPool {
                 throw new DBException("BufferPool is full");
             }
         }
+    }
+
+    public synchronized void discardPage(PageId pageId) {
+        pageCacheMap.remove(pageId);
     }
 }

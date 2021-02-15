@@ -93,6 +93,17 @@ public class BTreeRootPtrPage implements DBPage {
     }
 
     /**
+     * Get the id of the first header page, or null if none exists
+     * @return the id of the first header page
+     */
+    public BTreePageId getHeaderId() {
+        if(header == 0) {
+            return null;
+        }
+        return new BTreePageId(this.bTreePageId.getTableId(), header, BTreePageCategoryEnum.HEADER.getValue());
+    }
+
+    /**
      * Set the page id of the first header page
      * @param id - the id of the first header page
      */

@@ -165,7 +165,7 @@ public class DBHeapPage implements DBPage {
             throw new DBException("table desc not match");
         }
 
-        int emptySlotIndex = PageCommonUtil.getFirstEmptySlotIndex(this.bitMapHeaderArray);
+        int emptySlotIndex = PageCommonUtil.getFirstEmptySlotIndex(this.bitMapHeaderArray,true);
         this.recordArray[emptySlotIndex] = newRecord;
         this.bitMapHeaderArray[emptySlotIndex] = true;
     }

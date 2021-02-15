@@ -163,7 +163,7 @@ public class BTreeLeafPage implements DBPage {
         }
 
         // 找到一个空插槽
-        int emptySlotIndex = PageCommonUtil.getFirstEmptySlotIndex(this.bitMapHeaderArray);
+        int emptySlotIndex = PageCommonUtil.getFirstEmptySlotIndex(this.bitMapHeaderArray,true);
         // 由于B+树是有序的，找到当前页中小于或等于新增节点的最右下标
         int targetIndex = findMostRightIndexLessThanTarget(newRecord);
 
@@ -244,9 +244,7 @@ public class BTreeLeafPage implements DBPage {
         return new BTreeLeafPageItr(true);
     }
 
-    public static byte[] createEmptyPageData() {
-        return new byte[Database.getBufferPool().getPageSize()]; //all 0
-    }
+
 
     private Record readNextRecord(DataInputStream dis, int slotIndex) {
         if (!this.bitMapHeaderArray[slotIndex]) {

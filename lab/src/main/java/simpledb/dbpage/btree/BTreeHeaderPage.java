@@ -92,6 +92,14 @@ public class BTreeHeaderPage implements DBPage {
         return getHeaderSize();
     }
 
+    /**
+     * get the index of the first empty slot
+     * @return the index of the first empty slot or -1 if none exists
+     */
+    public int getFirstEmptySlotIndex() {
+        return PageCommonUtil.getFirstEmptySlotIndex(this.bitMapHeaderArray,false);
+    }
+
     @Override
     public PageId getPageId() {
         return this.bTreePageId;
@@ -127,6 +135,14 @@ public class BTreeHeaderPage implements DBPage {
             return null;
         }
         return new BTreePageId(this.bTreePageId.getTableId(), nextPage, BTreePageCategoryEnum.HEADER.getValue());
+    }
+
+    public void markSlotUsed(int index){
+        this.bitMapHeaderArray[index] = true;
+    }
+
+    public void markSlotNotUsed(int index){
+        this.bitMapHeaderArray[index] = false;
     }
 
     /**

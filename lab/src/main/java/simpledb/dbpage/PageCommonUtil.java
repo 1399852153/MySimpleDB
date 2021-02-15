@@ -1,5 +1,6 @@
 package simpledb.dbpage;
 
+import simpledb.Database;
 import simpledb.exception.DBException;
 
 /**
@@ -8,14 +9,18 @@ import simpledb.exception.DBException;
  */
 public class PageCommonUtil {
 
-    public static int getFirstEmptySlotIndex(boolean[] bitMapHeaderArray){
+    public static int getFirstEmptySlotIndex(boolean[] bitMapHeaderArray,boolean mustExist){
         for(int i=0; i<bitMapHeaderArray.length; i++){
             if(!bitMapHeaderArray[i]){
                 return i;
             }
         }
 
-        throw new DBException("can't find a empty slot");
+        if(mustExist){
+            throw new DBException("can't find a empty slot");
+        }else{
+            return -1;
+        }
     }
 
     public static int getNotEmptySlotsNum(boolean[] bitMapHeaderArray){
@@ -26,5 +31,9 @@ public class PageCommonUtil {
             }
         }
         return notEmptySlotNum;
+    }
+
+    public static byte[] createEmptyPageData() {
+        return new byte[Database.getBufferPool().getPageSize()]; //all 0
     }
 }

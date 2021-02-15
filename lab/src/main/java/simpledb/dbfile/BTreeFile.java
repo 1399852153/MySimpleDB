@@ -2,6 +2,7 @@ package simpledb.dbfile;
 
 import simpledb.Database;
 import simpledb.dbpage.DBPage;
+import simpledb.dbpage.PageCommonUtil;
 import simpledb.dbpage.PageId;
 import simpledb.dbpage.btree.*;
 import simpledb.dbrecord.Record;
@@ -10,10 +11,8 @@ import simpledb.iterator.DbFileIterator;
 import simpledb.iterator.enums.OperatorEnum;
 import simpledb.matadata.fields.Field;
 import simpledb.matadata.table.TableDesc;
-import sun.jvm.hotspot.debugger.Page;
 
 import java.io.*;
-import java.util.HashMap;
 import java.util.Iterator;
 
 /**
@@ -148,8 +147,6 @@ public class BTreeFile implements DBFile{
         return (int) ((f.length() - BTreeRootPtrPage.ROOT_PTR_PAGE_SIZE)/ Database.getBufferPool().getPageSize());
     }
 
-
-
     @Override
     public DbFileIterator<Record> getIterator() {
         return null;
@@ -212,22 +209,72 @@ public class BTreeFile implements DBFile{
         return null;
     }
 
-//    private Page getEmptyPage(BTreePageCategoryEnum pageCategoryEnum) {
-//        // create the new page
-//        int emptyPageNo = getEmptyPageNo(tid, dirtypages);
-//        BTreePageId newPageId = new BTreePageId(tableid, emptyPageNo, pgcateg);
-//
-//        // write empty page to disk
-//        RandomAccessFile rf = new RandomAccessFile(f, "rw");
-//        rf.seek(BTreeRootPtrPage.getPageSize() + (emptyPageNo-1) * BufferPool.getPageSize());
-//        rf.write(BTreePage.createEmptyPageData());
-//        rf.close();
-//
-//        // make sure the page is not in the buffer pool	or in the local cache
-//        Database.getBufferPool().discardPage(newPageId);
-//
-//        return getPage(tid, dirtypages, newPageId, Permissions.READ_WRITE);
-//    }
+    private DBPage getEmptyPage(BTreePageCategoryEnum pageCategoryEnum) throws IOException {
+        // create the new page
+        int emptyPageNo = getEmptyPageNo();
+        BTreePageId newPageId = new BTreePageId(this.tableId, emptyPageNo, pageCategoryEnum.getValue());
+
+        // write empty page to disk
+        RandomAccessFile rf = new RandomAccessFile(f, "rw");
+
+        rf.seek(BTreeRootPtrPage.ROOT_PTR_PAGE_SIZE + (emptyPageNo-1) * Database.getBufferPool().getPageSize());
+        rf.write(PageCommonUtil.createEmptyPageData());
+        rf.close();
+
+        // make sure the page is not in the buffer pool	or in the local cache
+        Database.getBufferPool().discardPage(newPageId);
+
+        return getPage(newPageId);
+    }
+
+    public int getEmptyPageNo() throws IOException {
+        BTreeRootPtrPage rootPtr = getRootPtrPage();
+        BTreePageId headerId = rootPtr.getHeaderId();
+
+        // 当前文件存在header文件
+        if(headerId != null) {
+            BTreeHeaderPage headerPage = (BTreeHeaderPage) getPage(headerId);
+            int headerPageCount = 0;
+            // 尝试找到一个存在空插槽的header页，用于定位一个的空页
+            // try to find a header page with an empty slot
+
+            while(headerPage != null && headerPage.getFirstEmptySlotIndex() != -1){
+                // 当headerPage不存在空插槽时，跳转到当前header页关联的下一个header页中
+                headerId = headerPage.getNextPageId();
+
+                if(headerId == null) {
+                    // 如果headerId为null，代表不存在后继的header页了，跳出循环
+                    headerPage = null;
+                    break;
+                }
+
+                headerPage = (BTreeHeaderPage) getPage(headerId);
+                headerPageCount++;
+            }
+
+            // 在headerPage中找到了一个拥有空插槽的header页，从中获取空页号
+            if(headerPage != null) {
+                headerPage = (BTreeHeaderPage) getPage(headerId);
+                int emptySlot = headerPage.getFirstEmptySlotIndex();
+                // getEmptyPageNo用于获取一个空页使用，因此在这里提前设置为已使用
+                headerPage.markSlotUsed(emptySlot);
+                // 因为headerPage中的每一个插槽对应一个页
+                // 最终找到的空页号emptyPageNo由顺序遍历的header页数*每一页的最大插槽数 + 当前header页内偏移量计算而来
+                return headerPageCount * headerPage.getMaxSlotNum() + emptySlot;
+            }
+        }
+
+        // 当前并不存在可用的空页
+        synchronized(this) {
+            // 在当前BTreeFile的末尾追加和创建一个新的页
+            BufferedOutputStream bw = new BufferedOutputStream(new FileOutputStream(f, true));
+            byte[] emptyData = PageCommonUtil.createEmptyPageData();
+            bw.write(emptyData);
+            bw.close();
+            // 末尾追加了一个新的空页后，返回当前文件的最后一页的页号
+            return numPages();
+        }
+    }
 
     private BTreeRootPtrPage getRootPtrPage() throws IOException {
         synchronized(this) {
@@ -238,7 +285,7 @@ public class BTreeFile implements DBFile{
                 byte[] emptyRootPtrData = BTreeRootPtrPage.createEmptyPageData();
                 bw.write(emptyRootPtrData);
 
-                byte[] emptyLeafData = BTreeLeafPage.createEmptyPageData();
+                byte[] emptyLeafData = PageCommonUtil.createEmptyPageData();
                 bw.write(emptyLeafData);
                 bw.close();
             }
