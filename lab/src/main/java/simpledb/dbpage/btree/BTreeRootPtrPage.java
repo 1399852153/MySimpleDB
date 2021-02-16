@@ -67,7 +67,7 @@ public class BTreeRootPtrPage implements DBPage {
     }
 
     @Override
-    public PageId getPageId() {
+    public BTreePageId getPageId() {
         return this.bTreePageId;
     }
 
@@ -144,7 +144,7 @@ public class BTreeRootPtrPage implements DBPage {
         return new byte[ROOT_PTR_PAGE_SIZE]; //all 0
     }
 
-    public static BTreePageId getId(String tableid) {
-        return new BTreePageId(tableid, 0, BTreePageCategoryEnum.ROOT_PTR.getValue());
+    public static BTreePageId getId(String tableId) {
+        return new BTreePageId(tableId, 0, BTreePageCategoryEnum.ROOT_PTR.getValue());
     }
 }

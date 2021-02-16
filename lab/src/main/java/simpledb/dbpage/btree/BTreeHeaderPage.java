@@ -11,6 +11,7 @@ import simpledb.matadata.types.ColumnTypeEnum;
 import simpledb.util.CommonUtil;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.Iterator;
 
 /**
@@ -101,7 +102,7 @@ public class BTreeHeaderPage implements DBPage {
     }
 
     @Override
-    public PageId getPageId() {
+    public BTreePageId getPageId() {
         return this.bTreePageId;
     }
 
@@ -183,7 +184,15 @@ public class BTreeHeaderPage implements DBPage {
         }
     }
 
-    private int getHeaderSize(){
+    /**
+     * Initially mark all slots in the header used.
+     */
+    public void init() {
+        // 整个header的bit位全部用1填充
+        Arrays.fill(this.bitMapHeaderArray, true);
+    }
+
+    public static int getHeaderSize(){
         int headerSpaceByte = Database.getBufferPool().getPageSize() - BTreeConstants.INDEX_SIZE * 2;
 
         return headerSpaceByte * 8;

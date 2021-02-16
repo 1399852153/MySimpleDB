@@ -23,7 +23,7 @@ public interface DBFile {
     void writePage(DBPage dbPage);
 
     List<DBPage> insertTuple(Record newRecord) throws IOException;
-    List<DBPage> deleteTuple(Record recordNeedDelete);
+    List<DBPage> deleteTuple(Record recordNeedDelete) throws IOException;
 
     DbFileIterator<Record> getIterator();
 }

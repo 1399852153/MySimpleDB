@@ -225,7 +225,7 @@ public class BTreeLeafPage extends BTreePage {
     }
 
     @Override
-    public PageId getPageId() {
+    public BTreePageId getPageId() {
         return this.pageId;
     }
 

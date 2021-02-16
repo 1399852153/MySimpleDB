@@ -165,7 +165,7 @@ public class BTreeFile implements DBFile{
     }
 
     @Override
-    public List<DBPage> deleteTuple(Record recordNeedDelete) {
+    public List<DBPage> deleteTuple(Record recordNeedDelete) throws IOException {
         HashMap<PageId, DBPage> dirtyPages = new HashMap<>();
 
         PageId targetPageId = recordNeedDelete.getRecordId().getPageId();
@@ -277,11 +277,11 @@ public class BTreeFile implements DBFile{
         BTreePageId oldRightSibId = leafPageNeedSplit.getRightSiblingId();
         // 新创建的newRightSib位于被拆分页面page和page之前的oldRightSibId之间（page<=>newRightSib<=>oldRightSibId）
         newRightSib.setRightSiblingId(oldRightSibId);
-        newRightSib.setLeftSiblingId(leafPageNeedSplit.getBTreePageId());
-        leafPageNeedSplit.setRightSiblingId(newRightSib.getBTreePageId());
+        newRightSib.setLeftSiblingId(leafPageNeedSplit.getPageId());
+        leafPageNeedSplit.setRightSiblingId(newRightSib.getPageId());
         if (oldRightSibId != null) {
             BTreeLeafPage oldRightSib = (BTreeLeafPage) getPage(dirtyPages,leafPageNeedSplit.getRightSiblingId());
-            oldRightSib.setLeftSiblingId(newRightSib.getBTreePageId());
+            oldRightSib.setLeftSiblingId(newRightSib.getPageId());
             // 拆分叶子页时oldRightSibId存在，存入dirtyPages
             dirtyPages.put(oldRightSib.getPageId(),oldRightSib);
         }
@@ -291,11 +291,11 @@ public class BTreeFile implements DBFile{
         dirtyPages.put(leafPageNeedSplit.getPageId(),leafPageNeedSplit);
 
         // 设置两者共同的双亲
-        newRightSib.setParentId(parent.getBTreePageId());
-        leafPageNeedSplit.setParentId(parent.getBTreePageId());
+        newRightSib.setParentId(parent.getPageId());
+        leafPageNeedSplit.setParentId(parent.getPageId());
 
         // 拆分后，parent双亲页中插入新的一条BTreeEntry
-        BTreeEntry newParentEntry = new BTreeEntry(midKey, leafPageNeedSplit.getBTreePageId(), newRightSib.getBTreePageId());
+        BTreeEntry newParentEntry = new BTreeEntry(midKey, leafPageNeedSplit.getPageId(), newRightSib.getPageId());
         parent.insertEntry(newParentEntry);
 
         // 返回的是拆分后，field最终被插入的那个叶子页
@@ -334,22 +334,22 @@ public class BTreeFile implements DBFile{
                 newRightSib.insertEntry(entryToMove[i]);
             }
             // 更新每一个被迁移的右孩子的parent，令newRightSib为新的parent
-            updateParentPointer(dirtyPages,newRightSib.getBTreePageId(), entryToMove[i].getRightChild());
+            updateParentPointer(dirtyPages,newRightSib.getPageId(), entryToMove[i].getRightChild());
         }
 
         // 被拆分出来的新叶子页面，其最小的记录作为key（新页面是右节点）
         BTreeEntry midKey = entryToMove[0];
         // midKey设置左右孩子
-        midKey.setLeftChild(internalPageNeedSplit.getBTreePageId());
-        midKey.setRightChild(newRightSib.getBTreePageId());
+        midKey.setLeftChild(internalPageNeedSplit.getPageId());
+        midKey.setRightChild(newRightSib.getPageId());
 
         // 拆分后，parent双亲页中插入新的一条BTreeEntry
         BTreeInternalPage parent = getParentWithEmptySlots(dirtyPages,internalPageNeedSplit, midKey.getKey());
         parent.insertEntry(midKey);
 
         // 设置被拆分的两个内部节点页的双亲
-        internalPageNeedSplit.setParentId(parent.getBTreePageId());
-        newRightSib.setParentId(parent.getBTreePageId());
+        internalPageNeedSplit.setParentId(parent.getPageId());
+        newRightSib.setParentId(parent.getPageId());
 
         // 拆分内部页时，parent、leafPageNeedSplit、newRightSib都被修改过了，存入dirtyPages
         dirtyPages.put(internalPageNeedSplit.getPageId(), internalPageNeedSplit);
@@ -369,7 +369,7 @@ public class BTreeFile implements DBFile{
     /**
      * b+树节点存储数据低于阈值时的处理
      * */
-    private void handleMinOccupancyPage(HashMap<PageId, DBPage> dirtyPages, BTreePage targetBTreePage){
+    private void handleMinOccupancyPage(HashMap<PageId, DBPage> dirtyPages, BTreePage targetBTreePage) throws IOException {
         BTreePageId parentId = targetBTreePage.getParentId();
         BTreeEntry leftEntry = null;
         BTreeEntry rightEntry = null;
@@ -407,7 +407,7 @@ public class BTreeFile implements DBFile{
      * b+树节点存储数据低于阈值时的处理(叶子节点页)
      * */
     private void handleMinOccupancyLeafPage(HashMap<PageId, DBPage> dirtyPages, BTreeLeafPage targetBTreeLeafPage,
-                                            BTreeInternalPage parent, BTreeEntry leftEntry, BTreeEntry rightEntry){
+                                            BTreeInternalPage parent, BTreeEntry leftEntry, BTreeEntry rightEntry) throws IOException {
         BTreePageId leftSiblingId = leftEntry != null ? leftEntry.getLeftChild() : null;
         BTreePageId rightSiblingId = rightEntry != null ? rightEntry.getRightChild() : null;
 
@@ -417,7 +417,7 @@ public class BTreeFile implements DBFile{
 
             if(leftSiblingPage.getNotEmptySlotsNum() < lowThreshold) {
                 // leftSiblingPage左兄弟页的空插槽数低于阈值，将左兄弟页和targetBTreeLeafPage合并为一个页
-                // mergeLeafPages(tid, dirtypages, leftSibling, page, parent, leftEntry);
+                 mergeLeafPages(dirtyPages, leftSiblingPage, targetBTreeLeafPage, parent, leftEntry);
             }else{
                 // leftSiblingPage左兄弟页的空插槽数高于阈值，从左兄弟页迁移一些数据到targetBTreeLeafPage，分摊数据
                  stealFromLeafPage(targetBTreeLeafPage, leftSiblingPage, parent, leftEntry, false);
@@ -428,7 +428,7 @@ public class BTreeFile implements DBFile{
 
             if(rightSiblingPage.getNotEmptySlotsNum() < lowThreshold) {
                 // rightSiblingPage右兄弟页的空插槽数低于阈值，将右兄弟页和targetBTreeLeafPage合并为一个页
-                // mergeLeafPages(tid, dirtypages, page, rightSibling, parent, rightEntry);
+                 mergeLeafPages(dirtyPages, targetBTreeLeafPage, rightSiblingPage, parent, rightEntry);
             }else{
                 // rightSiblingPage右兄弟页的空插槽数高于阈值，从右兄弟页迁移一些数据到targetBTreeLeafPage，分摊数据
                  stealFromLeafPage(targetBTreeLeafPage, rightSiblingPage, parent, rightEntry, true);
@@ -437,7 +437,7 @@ public class BTreeFile implements DBFile{
     }
 
     /**
-     * 从兄弟节点中迁移数据，进行平摊
+     * 从相邻兄弟节点中迁移数据，进行平摊
      * */
     public void stealFromLeafPage(BTreeLeafPage targetLeafPage, BTreeLeafPage sibling, BTreeInternalPage parent, BTreeEntry entry, boolean isRightSibling){
         // 计算一共需要搬运的记录数量
@@ -478,6 +478,45 @@ public class BTreeFile implements DBFile{
         }
     }
 
+    /**
+     * 将目标节点与相邻的一个兄弟节点进行合并（两个页所存储的数据均低于阈值）
+     * @param leftPage  将rightPage中的数据迁移至leftPage中，进行合并
+     * @param rightPage 删除rightPage
+     * */
+    public void mergeLeafPages(HashMap<PageId, DBPage> dirtyPages,
+                               BTreeLeafPage leftPage, BTreeLeafPage rightPage, BTreeInternalPage parent, BTreeEntry parentEntry) throws IOException {
+        // 暂时缓存rightPage所存储的记录数
+        Record[] recordsToDelete = new Record[rightPage.getNotEmptySlotsNum()];
+        int deleteCnt = recordsToDelete.length - 1;
+        Iterator<Record> it = rightPage.iterator();
+        while (deleteCnt >= 0 && it.hasNext()) {
+            recordsToDelete[deleteCnt--] = it.next();
+        }
+
+        for (Record recordItem : recordsToDelete) {
+            // 一边删除一边插入进行搬运
+            rightPage.deleteRecord(recordItem);
+            leftPage.insertRecord(recordItem);
+        }
+
+        // 由于rightPage将被删除，令leftPage与rightPage的右兄弟建立链接
+        BTreePageId rightPageRightSibId = rightPage.getRightSiblingId();
+        leftPage.setRightSiblingId(rightPageRightSibId);
+        if (rightPageRightSibId != null) {
+            BTreeLeafPage rightPageRightSibPage = (BTreeLeafPage) getPage(dirtyPages, rightPageRightSibId);
+            // rightPageRightSibId不为空，令rightPage的右兄弟与leftPage建立链接
+            rightPageRightSibPage.setLeftSiblingId(leftPage.getLeftSiblingId());
+            // rightPageRightSibPage被修改过了，存入dirtyPages
+            dirtyPages.put(rightPageRightSibId, rightPageRightSibPage);
+        }
+        // leftPage被修改过了，存入dirtyPages
+        dirtyPages.put(leftPage.getPageId(), leftPage);
+
+        // 清空rightPage
+        setEmptyPage(dirtyPages, rightPage.getPageId().getPageNo());
+        // todo 由于删除了rightPage，因此也需要删除对应的双亲节点
+        // deleteParentEntry(tid, dirtypages, leftPage, parent, parentEntry);
+    }
     /**
      * b+树节点存储数据低于阈值时的处理(内部节点页)
      * */
@@ -601,6 +640,52 @@ public class BTreeFile implements DBFile{
         }
     }
 
+    private void setEmptyPage(HashMap<PageId, DBPage> dirtyPages, int emptyPageNo) throws IOException {
+        BTreeRootPtrPage rootPtr = getRootPtrPage(dirtyPages);
+        BTreePageId headerId = rootPtr.getHeaderId();
+
+        if(headerId == null) {
+            // 当前不存在header页，新创建一个新的header页
+            rootPtr = (BTreeRootPtrPage) getPage(dirtyPages, BTreeRootPtrPage.getId(this.tableId));
+
+            BTreeHeaderPage headerPage = (BTreeHeaderPage) getEmptyPage(dirtyPages, BTreePageCategoryEnum.HEADER);
+            headerId = headerPage.getPageId();
+            headerPage.init();
+            rootPtr.setHeaderId(headerId);
+        }
+
+        BTreePageId prevId = null;
+        int headerPageCount = 0;
+
+        // 从目前已有的header页集合中找到emptyPageNo对应的header页
+        while(headerId != null && (headerPageCount + 1) * BTreeHeaderPage.getHeaderSize() < emptyPageNo) {
+            BTreeHeaderPage headerPage = (BTreeHeaderPage) getPage(dirtyPages, headerId);
+            prevId = headerId;
+            headerId = headerPage.getNextPageId();
+            headerPageCount++;
+        }
+
+        // 通过上面的迭代，依然没有找到emptyPageNo对应的header文件
+        while((headerPageCount + 1) * BTreeHeaderPage.getHeaderSize() < emptyPageNo) {
+            BTreeHeaderPage prevPage = (BTreeHeaderPage) getPage(dirtyPages, prevId);
+            // 进行循环，一直创建空的header文件，直到最新的header页能包含emptyPageNo
+            BTreeHeaderPage headerPage = (BTreeHeaderPage) getEmptyPage(dirtyPages, BTreePageCategoryEnum.HEADER);
+            headerId = headerPage.getPageId();
+            headerPage.init();
+            headerPage.setPrevPageId(prevId);
+            prevPage.setNextPageId(headerId);
+
+            headerPageCount++;
+            prevId = headerId;
+        }
+
+        // 执行到这里，已经可以保证headerPage已经能够包含emptyPageNo了
+        BTreeHeaderPage headerPage = (BTreeHeaderPage) getPage(dirtyPages, headerId);
+        int emptySlot = emptyPageNo - headerPageCount * BTreeHeaderPage.getHeaderSize();
+        // 计算出对应的header页内偏移，将其标记为未使用
+        headerPage.markSlotNotUsed(emptySlot);
+    }
+
     private BTreeRootPtrPage getRootPtrPage(HashMap<PageId, DBPage> dirtyPages) throws IOException {
         synchronized(this) {
             // 如果文件整个都是空的，放并发的构造初始化的空BTreeRootPtrPage和一个空BTreeLeafPage
@@ -629,5 +714,7 @@ public class BTreeFile implements DBFile{
         // 从bufferPool中查找
         return Database.getBufferPool().getPage(pid);
     }
+
+
 
 }
