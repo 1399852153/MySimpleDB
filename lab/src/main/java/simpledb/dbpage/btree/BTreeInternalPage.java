@@ -61,11 +61,6 @@ public class BTreeInternalPage extends BTreePage {
             // 读取出后续的header位图
             bitMapHeaderArray[i] = dis.readBoolean();
         }
-        // 不满一个字节的，将其跳过
-        int needSkip = CommonUtil.bitCeilByte(this.maxSlotNum);
-        for (int i = 0; i < needSkip; i++) {
-            dis.readBoolean();
-        }
 
         // 解析所存储的keys
         this.keys = new Field[this.maxSlotNum];
@@ -147,8 +142,8 @@ public class BTreeInternalPage extends BTreePage {
 
     private int getMaxEntryNum(){
         int keySize = this.tableDesc.getColumn(this.keyFieldIndex).getColumnTypeEnum().getLength();
-        // 每一个key所占用的bit位+索引位+1位header位
-        int bitsPerEntryIncludingHeader = keySize * 8 + BTreeConstants.INDEX_SIZE * 8 + 1;
+        // 每一个key所占用的bit位+索引位所占用的bit位+1位header位所占用的bit位
+        int bitsPerEntryIncludingHeader = keySize * 8 + BTreeConstants.INDEX_SIZE * 8 + 8;
         // extraBits are: one parent pointer, 1 byte for child page category,
         // one extra child pointer (node with m entries has m+1 pointers to children), 1 bit for extra header
         int extraBits = 2 * BTreeConstants.INDEX_SIZE * 8 + 8 + 1;

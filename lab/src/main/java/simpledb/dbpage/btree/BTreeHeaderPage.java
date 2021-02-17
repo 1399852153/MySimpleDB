@@ -195,6 +195,6 @@ public class BTreeHeaderPage implements DBPage {
     public static int getHeaderSize(){
         int headerSpaceByte = Database.getBufferPool().getPageSize() - BTreeConstants.INDEX_SIZE * 2;
 
-        return headerSpaceByte * 8;
+        return headerSpaceByte;
     }
 }

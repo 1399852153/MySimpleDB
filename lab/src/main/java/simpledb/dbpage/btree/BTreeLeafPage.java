@@ -93,11 +93,6 @@ public class BTreeLeafPage extends BTreePage {
             // 读取出后续的header位图
             bitMapHeaderArray[i] = dis.readBoolean();
         }
-        // 不满一个字节的，将其跳过
-        int needSkip = CommonUtil.bitCeilByte(this.maxSlotNum);
-        for (int i = 0; i < needSkip; i++) {
-            dis.readBoolean();
-        }
 
         // 解析所存储的业务数据
         recordArray = new Record[this.getMaxSlotNum()];
@@ -215,8 +210,8 @@ public class BTreeLeafPage extends BTreePage {
 
     @Override
     public int getMaxSlotNum() {
-        // td.getSize() * 8 = 每一个tuple的bit位(Byte数 * 8) + 1位的header位图 => 每一个Tuple占用的空间
-        int bitsPerTupleIncludingHeader = this.tableDesc.getSize() * 8 + 1;
+        // td.getSize() * 8 = 每一个tuple的bit位(Byte数 * 8) + 1Byte的header位图 => 每一个Tuple占用的空间
+        int bitsPerTupleIncludingHeader = this.tableDesc.getSize() * 8 + 8;
         // extraBits are: left sibling pointer, right sibling pointer, parent pointer
         // 3 * INDEX_SIZE * 8 = 三个指针(左、右兄弟以及双亲节点指针)占据的bit数(Byte数 * 8)
         int extraBits = 3 * BTreeConstants.INDEX_SIZE * 8;

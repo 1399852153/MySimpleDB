@@ -27,7 +27,7 @@ public class DBHeapPage implements DBPage {
     private final int maxSlotNum;
 
     /**
-     * header位图 true表示存在，false表示不存在
+     * header位图 true表示存在，false表示不存在 (注意：目前的设计里一个boolean在磁盘中占1字节)
      * */
     private boolean[] bitMapHeaderArray;
     private Record[] recordArray;
@@ -82,11 +82,6 @@ public class DBHeapPage implements DBPage {
         for (boolean b : this.bitMapHeaderArray) {
             dos.writeBoolean(b);
         }
-        // 不满一个字节的，将其跳过
-        int needSkip = CommonUtil.bitCeilByte(this.maxSlotNum);
-        for(int i=0; i<needSkip; i++){
-            dos.writeBoolean(false);
-        }
 
         // 写入record
         for (int i=0; i<this.recordArray.length; i++) {
@@ -94,8 +89,8 @@ public class DBHeapPage implements DBPage {
         }
 
         // 如果实际不足一页，用0填充页内剩余的空间(实际数据无法和页大小恰好对齐)
-        // 字节为单位 (页大小 - （位图大小bit * 8 + record长度 * record数量）)
-        int needPaddingLength = Database.getBufferPool().getPageSize() - (this.bitMapHeaderArray.length * 8 + this.tableDesc.getSize() * this.recordArray.length); //- numSlots * td.getSize();
+        // 字节为单位 (页大小 - （位图大小 + record长度 * record数量）)
+        int needPaddingLength = Database.getBufferPool().getPageSize() - (this.bitMapHeaderArray.length + this.tableDesc.getSize() * this.recordArray.length); //- numSlots * td.getSize();
         if(needPaddingLength > 0){
             byte[] zeroes = new byte[needPaddingLength];
             // 后续空余的空间，用0补齐
@@ -200,8 +195,8 @@ public class DBHeapPage implements DBPage {
         // BufferPool.getPageSize() * 8 => 每个HeapPage的字节数 * 8 => 每个HeapPage的字节数bit数（1Byte字节=8bit）
         int pageTotalBit = Database.getBufferPool().getPageSize() * 8;
 
-        // 每一个tuple的字节数 * 8 + 1(每个tuple占HeapPage header位图的1bit位)
-        int perRecordBit = tableDesc.getSize() * 8 + 1;
+        // 每一个tuple的字节数 * (8 + 1)(每个tuple占HeapPage header位图的1byte位)
+        int perRecordBit = tableDesc.getSize() * (8 + 1);
 
         // return返回值：HeapPage一页能容纳的tuple最大数量，向下取整（slot插槽数）
         return pageTotalBit / perRecordBit;
