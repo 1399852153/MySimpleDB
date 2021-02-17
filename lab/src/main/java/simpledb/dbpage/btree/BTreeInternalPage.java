@@ -363,15 +363,61 @@ public class BTreeInternalPage extends BTreePage {
             this.keys[pageInnerNo] = null;
             this.children[pageInnerNo] = null;
         }else {
-            // 如果需要删除的是左孩子，将BTreeEntry的右孩子迁移到左边（最靠右的非空插槽）
+            // 如果需要删除的是左孩子，将BTreeEntry的右孩子迁移到左边（覆盖掉最靠右的非空插槽）
             for(int i = pageInnerNo - 1; i >= 0; i--){
                 if(this.bitMapHeaderArray[pageInnerNo]){
                     children[i] = children[pageInnerNo];
                     this.bitMapHeaderArray[pageInnerNo] = false;
+                    this.children[pageInnerNo] = null;
+                    this.keys[pageInnerNo] = null;
+                    // 只需要修改一位即可，操作完直接返回
                     return;
                 }
             }
         }
+    }
+
+    public BTreeEntry getFirstEntry(){
+        for(int i=1; i<this.keys.length; i++){
+            if(keys[i] != null){
+                // 从头到尾的找
+                return getEntryByIndex(i);
+            }
+        }
+
+        return null;
+    }
+
+    public BTreeEntry getLastEntry(){
+        for(int i=this.keys.length-1; i>0; i--){
+            if(keys[i] != null){
+                // 从尾到头的找
+                return getEntryByIndex(i);
+            }
+        }
+
+        return null;
+    }
+
+    private BTreeEntry getEntryByIndex(int index){
+        Field key = keys[index];
+        BTreePageId leftChildId = new BTreePageId(BTreeInternalPage.this.tableDesc.getTableId(), prevChild(index-1), childCategory);
+        BTreePageId rightChildId = new BTreePageId(BTreeInternalPage.this.tableDesc.getTableId(), children[index], childCategory);
+
+        BTreeEntry entry = new BTreeEntry(key,leftChildId,rightChildId);
+        // value为实际的页内编号
+        entry.setRecordId(new RecordId(BTreeInternalPage.this.pageId,index));
+        return entry;
+    }
+
+    private int prevChild(int index){
+        for(int i=index; i>=0; i--){
+            if(children[index] != null){
+                return children[index];
+            }
+        }
+
+        throw new DBException("can not find precChild");
     }
 
     @Override

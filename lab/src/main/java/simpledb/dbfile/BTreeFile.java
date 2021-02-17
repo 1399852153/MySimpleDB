@@ -535,7 +535,7 @@ public class BTreeFile implements DBFile{
             }
             else {
                 // leftSiblingPage左兄弟页的空插槽数高于阈值，从左兄弟页迁移一些数据到targetBTreeInternalPage，分摊数据
-//                stealFromLeftInternalPage(tid, dirtypages, page, leftSibling, parent, leftEntry);
+                stealFromLeftInternalPage(dirtyPages, targetBTreeInternalPage, leftSiblingPage, parent, leftEntry);
             }
         } else if(rightSiblingId != null){
             BTreeInternalPage rightSiblingPage = (BTreeInternalPage) getPage(dirtyPages, rightSiblingId);
@@ -545,11 +545,94 @@ public class BTreeFile implements DBFile{
             }
             else {
                 // rightSiblingPage右兄弟页的空插槽数高于阈值，从右兄弟页迁移一些数据到targetBTreeInternalPage，分摊数据
-//                stealFromRightInternalPage(tid, dirtypages, page, rightSibling, parent, rightEntry);
+                stealFromRightInternalPage(dirtyPages, targetBTreeInternalPage, rightSiblingPage, parent, rightEntry);
             }
         }
     }
 
+    /**
+     * 从相邻的"左兄弟节点"中迁移数据到当前页，进行平摊
+     * */
+    private void stealFromLeftInternalPage(HashMap<PageId, DBPage> dirtyPages,
+                                          BTreeInternalPage page, BTreeInternalPage leftSiblingPage, BTreeInternalPage parent,
+                                          BTreeEntry leftEntry){
+        int numToMove = (leftSiblingPage.getNotEmptySlotsNum() - page.getNotEmptySlotsNum()) / 2;
+        BTreeEntry[] entryToMove = new BTreeEntry[numToMove];
+
+        // 将需要从左兄弟页面中迁移的数据准备好（左节点数据从尾部开始移动）
+        Iterator<BTreeEntry> it = leftSiblingPage.reverseIterator();
+        int cntDown = entryToMove.length - 1;
+        while (cntDown >= 0 && it.hasNext()) {
+            entryToMove[cntDown--] = it.next();
+        }
+
+        // 需要从左页面中迁移的数据，倒序的插入页面中
+        for (int i=entryToMove.length-1; i >= 0; --i) {
+            BTreeEntry entryItem = entryToMove[i];
+            // 将entryItem其从左兄弟页中删除
+            leftSiblingPage.deleteKeyAndRightChild(entryItem);
+            // 更新entryItem右孩子页面的parent
+            updateParentPointer(dirtyPages, page.getPageId(), entryItem.getRightChild());
+
+            // 更新parent页中对应的entry，目的是更新key
+            // 因为parent页中对应entry的key是右手页的第1个非空项；而从左兄弟中迁移节点时，第0项的key会发生变化（通常是变小，当然也可能不变））
+            BTreeEntry updateParentEntry = new BTreeEntry(entryItem.getKey(),leftEntry.getLeftChild(),leftEntry.getRightChild());
+            updateParentEntry.setRecordId(leftEntry.getRecordId());
+            parent.updateEntry(updateParentEntry);
+
+            // 构造需要迁移插入至当前页面的entry
+            BTreeEntry oldFirstEntry = page.getFirstEntry();
+            BTreeEntry newEntry = new BTreeEntry(oldFirstEntry.getKey(),entryItem.getRightChild(),oldFirstEntry.getLeftChild());
+            page.insertEntry(newEntry);
+        }
+
+        // 修改过的页面加入脏页
+        dirtyPages.put(parent.getPageId(), parent);
+        dirtyPages.put(leftSiblingPage.getPageId(), leftSiblingPage);
+        dirtyPages.put(page.getPageId(), page);
+    }
+
+    /**
+     * 从相邻的"右兄弟节点"中迁移数据到当前页，进行平摊
+     * */
+    public void stealFromRightInternalPage(HashMap<PageId, DBPage> dirtyPages,
+                                           BTreeInternalPage page, BTreeInternalPage rightSiblingPage, BTreeInternalPage parent,
+                                           BTreeEntry rightEntry){
+        int numToMove = (rightSiblingPage.getNotEmptySlotsNum() - page.getNotEmptySlotsNum()) / 2;
+        BTreeEntry[] entryToMove = new BTreeEntry[numToMove];
+
+        // 将需要从右兄弟页面中迁移的数据准备好（右节点数据从头部开始移动）
+        Iterator<BTreeEntry> it = rightSiblingPage.iterator();
+        int cntDown = 0;
+        while (cntDown < entryToMove.length && it.hasNext()) {
+            entryToMove[cntDown++] = it.next();
+        }
+
+        for (BTreeEntry entryItem : entryToMove) {
+            // 将entryItem其从左兄弟页中删除
+            rightSiblingPage.deleteKeyAndLeftChild(entryItem);
+            // 更新entryItem右孩子页面的parent
+            updateParentPointer(dirtyPages, page.getPageId(), entryItem.getLeftChild());
+
+            // 构造需要迁移插入至当前页面的entry
+            BTreeEntry oldLastEntry = page.getLastEntry();
+            BTreeEntry newEntry = new BTreeEntry(entryItem.getKey(),entryItem.getLeftChild(),oldLastEntry.getRightChild());
+            page.insertEntry(newEntry);
+
+            // 更新parent页中对应的entry，目的是更新key
+            // 因为parent页中对应entry的key是右手页的第1个非空项；而从右兄弟中迁出节点时，第0项的key会发生变化（通常是变大，当然也可能不变））
+            BTreeEntry rightSiblingFirstEntry = rightSiblingPage.getFirstEntry();
+            // 将右兄弟的第一个节点迁移完成后，再更新parent页中entry的key为最新的第0项key
+            BTreeEntry updateParentEntry = new BTreeEntry(rightSiblingFirstEntry.getKey(),rightEntry.getLeftChild(),rightEntry.getRightChild());
+            updateParentEntry.setRecordId(rightEntry.getRecordId());
+            parent.updateEntry(updateParentEntry);
+        }
+
+        // 修改过的页面加入脏页
+        dirtyPages.put(parent.getPageId(), parent);
+        dirtyPages.put(page.getPageId(), page);
+        dirtyPages.put(rightSiblingPage.getPageId(), rightSiblingPage);
+    }
 
     /**
      * 将目标节点与相邻的一个兄弟节点进行合并（两个页所存储的数据均低于阈值）
