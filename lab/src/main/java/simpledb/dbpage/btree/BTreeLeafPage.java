@@ -336,20 +336,19 @@ public class BTreeLeafPage extends BTreePage {
         Field keyField = target.getField(this.keyFieldIndex);
 
         int mostRightIndexLessThanTarget = -1;
+        // 找到小于或等于参数target的最右下标
         for (int i = 0; i < this.maxSlotNum; i++) {
             if (this.bitMapHeaderArray[i]) {
                 Field fieldItem = this.recordArray[i].getField(this.keyFieldIndex);
                 if (fieldItem.compare(OperatorEnum.LESS_THAN_OR_EQ, keyField)) {
                     mostRightIndexLessThanTarget = i;
                 } else {
-                    // 找到小于或等于参数target的最右下标
                     return mostRightIndexLessThanTarget;
                 }
             }
         }
 
-        // 没有找到符合要求的最右下标
-        return -1;
+        return mostRightIndexLessThanTarget;
     }
 
     /**
