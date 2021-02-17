@@ -93,11 +93,6 @@ public class BTreeInternalPage extends BTreePage {
         for (boolean b : this.bitMapHeaderArray) {
             dos.writeBoolean(b);
         }
-        // 不满一个字节的，将其跳过
-        int needSkip = CommonUtil.bitCeilByte(this.maxSlotNum);
-        for (int i = 0; i < needSkip; i++) {
-            dos.writeBoolean(false);
-        }
 
         // 写入keys(和初始化时一致，keys[0]为null不存储在磁盘中)
         for (int i=1; i<keys.length; i++) {
@@ -112,7 +107,7 @@ public class BTreeInternalPage extends BTreePage {
         // 如果实际不足一页，用0填充页内剩余的空间(实际数据无法和页大小恰好对齐)
         int parentPointSpace = BTreeConstants.INDEX_SIZE;
         int childCategoryToByteSpace = 1;
-        int bitMapHeaderArraySpace = (this.bitMapHeaderArray.length + needSkip)/8;
+        int bitMapHeaderArraySpace = (this.bitMapHeaderArray.length);
         int keysSpace = this.tableDesc.getColumn(this.keyFieldIndex).getColumnTypeEnum().getLength() * (keys.length - 1);
         int childrenSpace = BTreeConstants.INDEX_SIZE * children.length;
 

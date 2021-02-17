@@ -54,11 +54,6 @@ public class DBHeapPage implements DBPage {
         for (int i=0; i<bitMapHeaderArray.length; i++) {
             this.bitMapHeaderArray[i] = dis.readBoolean();
         }
-        // 不满一个字节的，将其跳过
-        int needSkip = CommonUtil.bitCeilByte(this.getMaxSlotNum());
-        for(int i=0; i<needSkip; i++){
-            dis.readBoolean();
-        }
 
         // 读取文件流，根据读取出相应的数据记录
         this.recordArray = new Record[this.maxSlotNum];
@@ -192,14 +187,11 @@ public class DBHeapPage implements DBPage {
 
     @Override
     public int getMaxSlotNum(){
-        // BufferPool.getPageSize() * 8 => 每个HeapPage的字节数 * 8 => 每个HeapPage的字节数bit数（1Byte字节=8bit）
-        int pageTotalBit = Database.getBufferPool().getPageSize() * 8;
-
-        // 每一个tuple的字节数 * (8 + 1)(每个tuple占HeapPage header位图的1byte位)
-        int perRecordBit = tableDesc.getSize() * (8 + 1);
+        // （每一个tuple的字节数+header 1字节）
+        int perRecordBit = tableDesc.getSize() + 1;
 
         // return返回值：HeapPage一页能容纳的tuple最大数量，向下取整（slot插槽数）
-        return pageTotalBit / perRecordBit;
+        return Database.getBufferPool().getPageSize() / perRecordBit;
     }
 
     @Override

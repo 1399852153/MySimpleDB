@@ -52,11 +52,6 @@ public class BTreeHeaderPage implements DBPage {
         for (int i=0; i<bitMapHeaderArray.length; i++) {
             bitMapHeaderArray[i] = dis.readBoolean();
         }
-        // 不满一个字节的，将其跳过
-        int needSkip = CommonUtil.bitCeilByte(this.maxSlotNum);
-        for (int i = 0; i < needSkip; i++) {
-            dis.readBoolean();
-        }
 
         dis.close();
     }
@@ -71,11 +66,6 @@ public class BTreeHeaderPage implements DBPage {
         // 写入头部位图
         for (boolean b : this.bitMapHeaderArray) {
             dos.writeBoolean(b);
-        }
-        // 不满一个字节的，将其跳过
-        int needSkip = CommonUtil.bitCeilByte(this.maxSlotNum);
-        for (int i = 0; i < needSkip; i++) {
-            dos.writeBoolean(false);
         }
 
         dos.flush();
