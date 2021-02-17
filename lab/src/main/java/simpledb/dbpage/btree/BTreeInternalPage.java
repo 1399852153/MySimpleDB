@@ -167,7 +167,7 @@ public class BTreeInternalPage extends BTreePage {
         if (!e.getKey().getType().equals(this.tableDesc.getColumn(this.keyFieldIndex).getColumnTypeEnum())) {
             throw new DBException("key field type mismatch, in insertEntry");
         }
-        if(e.getLeftChild().getTableId().equals(this.pageId.getTableId()) || e.getRightChild().getTableId().equals(this.pageId.getTableId())) {
+        if(!e.getLeftChild().getTableId().equals(this.pageId.getTableId()) || !e.getRightChild().getTableId().equals(this.pageId.getTableId())) {
             throw new DBException("table id mismatch in insertEntry");
         }
 
