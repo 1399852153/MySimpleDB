@@ -292,7 +292,7 @@ public class BTreeInternalPage extends BTreePage {
         if(recordId == null) {
             throw new DBException("tried to update entry with null rid");
         }
-        if((recordId.getPageId().getPageNo() != this.pageId.getPageNo()) || (recordId.getPageId().getTableId().equals(this.pageId.getTableId()))) {
+        if((recordId.getPageId().getPageNo() != this.pageId.getPageNo()) || (!recordId.getPageId().getTableId().equals(this.pageId.getTableId()))) {
             throw new DBException("tried to update entry on invalid page or table");
         }
         if (!this.bitMapHeaderArray[recordId.getPageInnerNo()]){
