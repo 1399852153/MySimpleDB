@@ -514,8 +514,8 @@ public class BTreeFile implements DBFile{
 
         // 清空rightPage
         setEmptyPage(dirtyPages, rightPage.getPageId().getPageNo());
-        // todo 由于删除了rightPage，因此也需要删除对应的双亲节点
-        // deleteParentEntry(tid, dirtypages, leftPage, parent, parentEntry);
+        // 由于删除了rightPage，因此也需要删除对应的双亲页中的entry
+        deleteParentEntry(dirtyPages, leftPage, parent, parentEntry);
     }
     /**
      * b+树节点存储数据低于阈值时的处理(内部节点页)
@@ -536,6 +536,36 @@ public class BTreeFile implements DBFile{
             // 如果child对应的页和参数pid不一致，将其parentId设置为pid
             p = (BTreePage) getPage(dirtyPages,child);
             p.setParentId(parentId);
+        }
+    }
+
+    /**
+     * 删除对应的双亲节点页中的entry
+     * */
+    private void deleteParentEntry(HashMap<PageId, DBPage> dirtyPages,
+                                   BTreePage leftPage, BTreeInternalPage parent, BTreeEntry parentEntry) throws IOException {
+        // 首先将parentEntry删除掉
+        parent.deleteKeyAndRightChild(parentEntry);
+
+        int lowThreshold = PageCommonUtil.lowThreshold(parent);
+        if(parent.getNotEmptySlotsNum() == 0){
+            // 当前删除的entry是parent页的最后一项,那么parent的双亲节点必定是root_ptr类型(否则一定会在这之前和parent的兄弟节点合并或者平摊)
+
+            BTreePageId rootPtrId = parent.getParentId();
+            if(rootPtrId.getPageCategory() != BTreePageCategoryEnum.ROOT_PTR.getValue()) {
+                throw new DBException("attempting to delete a non-root node");
+            }
+
+            BTreeRootPtrPage rootPtr = (BTreeRootPtrPage) getPage(dirtyPages, rootPtrId);
+            // 由于leftPage的双亲页被删除，此时应该只存在leftPage这一个页了，因此leftPage成为整颗B+树的根节点页
+            leftPage.setParentId(rootPtrId);
+            rootPtr.setRootId(leftPage.getBTreePageId());
+
+            // 释放已经不存在任何记录的parent页
+            setEmptyPage(dirtyPages, parent.getPageId().getPageNo());
+        }else if(parent.getNotEmptySlotsNum() <= lowThreshold){
+            // 删除后存储的数据低于阈值
+            handleMinOccupancyPage(dirtyPages,parent);
         }
     }
 
