@@ -520,16 +520,85 @@ public class BTreeFile implements DBFile{
     /**
      * b+树节点存储数据低于阈值时的处理(内部节点页)
      * */
-    private void handleMinOccupancyInternalPage(HashMap<PageId, DBPage> dirtyPages, BTreeInternalPage page,
-                                            BTreeInternalPage parent, BTreeEntry leftEntry, BTreeEntry rightEntry){
+    private void handleMinOccupancyInternalPage(HashMap<PageId, DBPage> dirtyPages, BTreeInternalPage targetBTreeInternalPage,
+                                            BTreeInternalPage parent, BTreeEntry leftEntry, BTreeEntry rightEntry) throws IOException {
+        BTreePageId leftSiblingId = leftEntry != null ? leftEntry.getLeftChild() : null;
+        BTreePageId rightSiblingId = rightEntry != null ? rightEntry.getRightChild() : null;
 
+        int lowThreshold = PageCommonUtil.lowThreshold(targetBTreeInternalPage);
+        if(leftSiblingId != null){
+            BTreeInternalPage leftSiblingPage = (BTreeInternalPage) getPage(dirtyPages, leftSiblingId);
+
+            if(leftSiblingPage.getNotEmptySlotsNum() < lowThreshold) {
+                // leftSiblingPage左兄弟页的空插槽数低于阈值，将左兄弟页和targetBTreeInternalPage合并为一个页
+                mergeInternalPages(dirtyPages, leftSiblingPage, targetBTreeInternalPage, parent, leftEntry);
+            }
+            else {
+                // leftSiblingPage左兄弟页的空插槽数高于阈值，从左兄弟页迁移一些数据到targetBTreeInternalPage，分摊数据
+//                stealFromLeftInternalPage(tid, dirtypages, page, leftSibling, parent, leftEntry);
+            }
+        } else if(rightSiblingId != null){
+            BTreeInternalPage rightSiblingPage = (BTreeInternalPage) getPage(dirtyPages, rightSiblingId);
+            if(rightSiblingPage.getNotEmptySlotsNum() < lowThreshold) {
+                // rightSiblingPage右兄弟页的空插槽数低于阈值，将右兄弟页和targetBTreeInternalPage合并为一个页
+                mergeInternalPages(dirtyPages, targetBTreeInternalPage, rightSiblingPage, parent, rightEntry);
+            }
+            else {
+                // rightSiblingPage右兄弟页的空插槽数高于阈值，从右兄弟页迁移一些数据到targetBTreeInternalPage，分摊数据
+//                stealFromRightInternalPage(tid, dirtypages, page, rightSibling, parent, rightEntry);
+            }
+        }
+    }
+
+
+    /**
+     * 将目标节点与相邻的一个兄弟节点进行合并（两个页所存储的数据均低于阈值）
+     * @param leftPage  将rightPage中的数据迁移至leftPage中，进行合并
+     * @param rightPage 删除rightPage
+     * @param inParentEntry 在双亲节点中的entry
+     * */
+    private void mergeInternalPages(HashMap<PageId, DBPage> dirtyPages,
+                                   BTreeInternalPage leftPage, BTreeInternalPage rightPage, BTreeInternalPage parent, BTreeEntry inParentEntry) throws IOException {
+        deleteParentEntry(dirtyPages, leftPage, parent, inParentEntry);
+
+        // 合并内部节点页时需要将parent中的那个entry先放到left中，然后再将rightPage中的entry迁移过来
+        BTreeEntry parentEntryCopy = new BTreeEntry(
+                inParentEntry.getKey(),
+                 leftPage.reverseIterator().next().getRightChild(),
+                 rightPage.iterator().next().getLeftChild()
+        );
+        leftPage.insertEntry(parentEntryCopy);
+
+        // 先收集需要搬运的rightPage中的entry
+        BTreeEntry[] rightPageEntry = new BTreeEntry[rightPage.getNotEmptySlotsNum()];
+        Iterator<BTreeEntry> it = rightPage.iterator();
+        int moveCount = 0;
+        while (it.hasNext()) {
+            rightPageEntry[moveCount] = it.next();
+            moveCount++;
+        }
+
+        for (BTreeEntry entryItem : rightPageEntry) {
+            // 一边删除一边插入进行搬运
+            rightPage.deleteKeyAndLeftChild(entryItem);
+            // 更新rightPage中包含的page，令其parent页由rightPage改为leftPage
+            updateParentPointer(dirtyPages, leftPage.getPageId(), entryItem.getLeftChild());
+            updateParentPointer(dirtyPages, leftPage.getPageId(), entryItem.getRightChild());
+            leftPage.insertEntry(entryItem);
+        }
+
+        // leftPage被修改过了，存入dirtyPages
+        dirtyPages.put(leftPage.getPageId(), leftPage);
+
+        // 清空rightPage
+        setEmptyPage(dirtyPages, rightPage.getPageId().getPageNo());
     }
 
     /**
      * 设置child页的双亲页id
      * */
     private void updateParentPointer(HashMap<PageId, DBPage> dirtyPages,BTreePageId parentId, BTreePageId child){
-        // 先以只读的权限，查询出child对应的页
+        // 查询出child对应的页
         BTreePage p = (BTreePage)getPage(dirtyPages,child);
 
         if(!p.getParentId().equals(parentId)) {
