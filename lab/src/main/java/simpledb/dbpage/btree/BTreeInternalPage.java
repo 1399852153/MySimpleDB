@@ -2,7 +2,6 @@ package simpledb.dbpage.btree;
 
 import simpledb.Database;
 import simpledb.dbpage.PageCommonUtil;
-import simpledb.dbpage.PageId;
 import simpledb.dbrecord.RecordId;
 import simpledb.exception.DBException;
 import simpledb.exception.ParseException;
@@ -348,7 +347,7 @@ public class BTreeInternalPage extends BTreePage {
         if(recordId == null) {
             throw new DBException("tried to delete entry with null rid");
         }
-        if((recordId.getPageId().getPageNo() != this.pageId.getPageNo()) || (recordId.getPageId().getTableId().equals(this.pageId.getTableId()))) {
+        if((recordId.getPageId().getPageNo() != this.pageId.getPageNo()) || (!recordId.getPageId().getTableId().equals(this.pageId.getTableId()))) {
             throw new DBException("tried to delete entry on invalid page or table");
         }
         if (!this.bitMapHeaderArray[recordId.getPageInnerNo()]){
@@ -410,14 +409,18 @@ public class BTreeInternalPage extends BTreePage {
         return entry;
     }
 
-    private int prevChild(int index){
+    private int prevChildIndex(int index){
         for(int i=index; i>=0; i--){
             if(children[index] != null){
-                return children[index];
+                return i;
             }
         }
 
-        throw new DBException("can not find precChild");
+        throw new DBException("can not find prevChild");
+    }
+
+    private int prevChild(int index){
+       return children[prevChildIndex(index)];
     }
 
     @Override
@@ -530,7 +533,7 @@ public class BTreeInternalPage extends BTreePage {
             for (int i = 1; i < BTreeInternalPage.this.maxSlotNum; i++) {
                 if (BTreeInternalPage.this.bitMapHeaderArray[i]) {
                     // 过滤掉为空的插槽
-                    noEmptyKeyList.add(i, BTreeInternalPage.this.keys[i]);
+                    noEmptyKeyList.add(BTreeInternalPage.this.keys[i]);
                 }
             }
             if(needReverse) {
@@ -541,11 +544,11 @@ public class BTreeInternalPage extends BTreePage {
 
             List<Tuple> noEmptyLeftChildrenList = new ArrayList<>();
             List<Tuple> noEmptyRightChildrenList = new ArrayList<>();
-            for (int i = 0; i < BTreeInternalPage.this.maxSlotNum-1; i++) {
+            for (int i = 1; i < BTreeInternalPage.this.maxSlotNum; i++) {
                 if (BTreeInternalPage.this.bitMapHeaderArray[i]) {
                     // 过滤掉为空的插槽
-                    noEmptyLeftChildrenList.add(new Tuple(BTreeInternalPage.this.children[i],i));
-                    noEmptyRightChildrenList.add(new Tuple(BTreeInternalPage.this.children[i+1],i+1));
+                    noEmptyLeftChildrenList.add(new Tuple(BTreeInternalPage.this.prevChild(i-1),i));
+                    noEmptyRightChildrenList.add(new Tuple(BTreeInternalPage.this.children[i],i));
                 }
             }
             if(needReverse) {

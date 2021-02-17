@@ -743,7 +743,7 @@ public class BTreeFile implements DBFile{
             BTreeInternalPage parent = (BTreeInternalPage) getPage(dirtyPages,parentPageId);
 
             // split the parent if needed
-            if(parent.getNotEmptySlotsNum() == parent.getNotEmptySlotsNum()) {
+            if(parent.getNotEmptySlotsNum() == parent.getMaxSlotNum()) {
                 // 当前双亲节点已经没有空插槽了，将双亲节点进行拆分
                 parent = splitInternalPage(dirtyPages,parent, field);
             }
