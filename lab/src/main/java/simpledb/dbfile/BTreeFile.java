@@ -148,7 +148,9 @@ public class BTreeFile implements DBFile{
         if(rootPtrId == null) {
             // 根节点指针页当前还不存在，构建一个BTreeRootPtrPage
             rootPtr = (BTreeRootPtrPage) getPage(dirtyPages,BTreeRootPtrPage.getId(this.tableId));
-            rootPtrId = new BTreePageId(this.tableId, 0, BTreePageCategoryEnum.LEAF.getValue());
+            // 此时，必定只存在一个叶子页，且其页号是处于当前最末尾的
+            int leafPageNum = numPages();
+            rootPtrId = new BTreePageId(this.tableId, leafPageNum, BTreePageCategoryEnum.LEAF.getValue());
             rootPtr.setRootId(rootPtrId);
         }
 

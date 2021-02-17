@@ -2,7 +2,6 @@ package simpledb;
 
 import simpledb.dbpage.DBPage;
 import simpledb.dbpage.PageId;
-import simpledb.dbpage.normal.HeapPageId;
 import simpledb.exception.DBException;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class BufferPool {
 
-    private static final int DEFAULT_PAGE_SIZE = 4096;
+    private static final int DEFAULT_PAGE_SIZE = 1024;
 
     private final ConcurrentHashMap<PageId, DBPage> pageCacheMap = new ConcurrentHashMap<>();
 
@@ -28,8 +27,9 @@ public class BufferPool {
     }
 
     public DBPage getPage(PageId pageId){
-        if (pageCacheMap.contains(pageId)) {
-            return pageCacheMap.get(pageId);
+        DBPage cachePage = pageCacheMap.get(pageId);
+        if (cachePage != null) {
+            return cachePage;
         }else{
             if (pageCacheMap.size() < this.maxPageSize) {
                 DBPage page = Database.getCatalog()
